@@ -1,1 +1,4 @@
-data
+data/readme.txt
+data/Training/*
+data/Validation/*
+.git
