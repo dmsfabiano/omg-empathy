@@ -1,4 +1,14 @@
 data/readme.txt
 data/Training/*
+!data/Training/.gitkeep
 data/Validation/*
+!data/Validation/.gitkeep
+data/audio/Training/*
+!data/audio/Training/.gitkeep
+data/audio/Validation/*
+!data/audio/Validation/.gitkeep
+data/faces/Training/*
+!data/faces/Training/.gitkeep
+data/faces/Validation/*
+!data/faces/Validation/.gitkeep
 .git
