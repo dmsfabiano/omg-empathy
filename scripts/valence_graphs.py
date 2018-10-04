@@ -15,14 +15,14 @@ def subjectToStories(path):
     subjectToStoryPath = dict()
     for (paths, dirnames, filenames) in os.walk(path):
         for filename in filenames:
-		if filename.endswith('.csv'):
-			subject_number = '_'.join(filename.split('_')[0:2])
-			if subject_number in subjectToStoryPath:
-				subjectToStoryPath[subject_number].append(os.path.join(paths, filename)) 
-				subjectToStoryPath[subject_number] = sorted(subjectToStoryPath[subject_number], key=lambda x: int(x.split('_')[3][0]))
-			else:
-				subjectToStoryPath[subject_number] = []
-				subjectToStoryPath[subject_number].append(os.path.join(paths, filename))
+            if filename.endswith('.csv'):
+                subject_number = '_'.join(filename.split('_')[0:2])
+                if subject_number in subjectToStoryPath:
+                    subjectToStoryPath[subject_number].append(os.path.join(paths, filename)) 
+                    subjectToStoryPath[subject_number] = sorted(subjectToStoryPath[subject_number], key=lambda x: int(x.split('_')[3][0]))
+                else:
+                    subjectToStoryPath[subject_number] = []
+                    subjectToStoryPath[subject_number].append(os.path.join(paths, filename))
     return sorted(subjectToStoryPath.items(), key=lambda x: int(x[0].split('_')[1]))
 
 def graphSubjects(path, output_path):
