@@ -1,0 +1,3 @@
+/home/david/Documents/code_projects/omg-empathy/scripts/c++-scripts/CMakeFiles/rebuild_cache.dir
+/home/david/Documents/code_projects/omg-empathy/scripts/c++-scripts/CMakeFiles/FaceDetector.dir
+/home/david/Documents/code_projects/omg-empathy/scripts/c++-scripts/CMakeFiles/edit_cache.dir
