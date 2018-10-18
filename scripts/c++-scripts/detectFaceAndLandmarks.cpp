@@ -53,7 +53,7 @@ vector<Mat> readVideo(const string& path) {
 
 vector<Rect> detectFace(const Mat& frame) {
 	vector<Rect> faces;
-	face_cascade.detectMultiScale( frame, faces, 1.05, 0, 3, Size(30, 30) );
+	face_cascade.detectMultiScale( frame, faces, 1.4, 0, 6, Size(96, 96) );
 	return faces;
 }
 
@@ -63,7 +63,7 @@ Mat preprocess(Mat& frame, const bool subject) {
 	} else {
 		frame = frame(Rect(0, 0, frame.size().width/2, frame.size().height));
 	}
-	Mat gray;
+	/*Mat gray;
 	vector<Rect> faces;
 	if(frame.channels()>1){
 	    cvtColor(frame,gray,COLOR_BGR2GRAY);
@@ -72,7 +72,8 @@ Mat preprocess(Mat& frame, const bool subject) {
 	    gray = frame.clone();
 	}
 	equalizeHist( gray, gray );
-	return gray;
+	return gray;*/
+	return frame;
 }
 
 Mat grayToColor(Mat&& gray) {
@@ -96,11 +97,12 @@ pair<vector<Mat>, vector<vector<Point2f>>> detectFacesAndLandmarks(vector<Mat>& 
 
 	double sum = 0.0;
 	double errors = 0.0;
+	double lm_error = 0.0;
 	for(auto& frame : frames) {
-		sum += 1;
+		++sum;
 		auto bounds = detectFace(frame);
 		if(bounds.empty()) {
-			errors += 1;
+			++errors;
 			if(!faces.empty()) {
 				faces.push_back(faces.back());
 				landmarks.push_back(landmarks.back());
@@ -110,12 +112,14 @@ pair<vector<Mat>, vector<vector<Point2f>>> detectFacesAndLandmarks(vector<Mat>& 
 				faces.push_back(sizeTo256(Mat(frame,bounds.at(0))));
 				landmarks.push_back(landmark.at(0));
 			} else {
+				++lm_error;
 				faces.push_back(sizeTo256(Mat(frame,bounds.at(0))));
 				landmarks.push_back(landmarks.back());
 			}
 		}
 	}
-	cout << errors / sum << "%\n\n";
+	ofstream out_file("accuracy.txt", ios::app);
+	out_file << errors/sum * 100.0 << "%\t" << lm_error/sum * 100.0 << "%\n";
 	return {faces,landmarks};
 }
 
@@ -126,7 +130,7 @@ int main() {
 		auto [faces, landmarks] = detectFacesAndLandmarks(frames);
 		unsigned int frame_number = 1;
 		for(auto& face : faces) {
-			imwrite(trainingOutputPath + path.filename().string() + "_frame" + to_string(frame_number) + ".png", grayToColor(move(face)));
+			imwrite(trainingOutputPath + path.filename().string() + "_frame" + to_string(frame_number) + ".png", face);
 			++frame_number;
 		}
 		ofstream of(trainingOutputPath + path.filename().string() + ".landmarks.txt");
