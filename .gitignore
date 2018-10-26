@@ -12,3 +12,8 @@ data/faces/Training/*
 data/faces/Validation/*
 !data/faces/Validation/.gitkeep
 .git
+/scripts/c++-scripts/CMakeFiles
+/scripts/c++-scripts/CMakeCache.txt
+/scripts/c++-scripts/FaceDetector
+/scripts/c++-scripts/cmake_install.cmake
+
