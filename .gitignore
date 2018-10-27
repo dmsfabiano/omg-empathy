@@ -16,4 +16,4 @@ data/faces/Validation/*
 /scripts/c++-scripts/CMakeCache.txt
 /scripts/c++-scripts/FaceDetector
 /scripts/c++-scripts/cmake_install.cmake
-
+data/audio/CSV-*
