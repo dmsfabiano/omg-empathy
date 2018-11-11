@@ -24,7 +24,7 @@ if __name__ == '__main__':
 	offset = int(len(x_train) * 0.3)
 	x_train = x_train[0:offset]
 	y_train = y_train[0:len(x_train)]
-	x_test,y_test = operations.read_images_together(images_dir= 'C:\\Users\\Diego Fabiano\\Documents\\OMG-FG-Challenge\\data\\faces\\Validation\\',y_dir='C:\\Users\\Diego Fabiano\\Documents\\OMG-FG-Challenge\\data\\Validation\\Annotations\\')
+	x_test,y_test = operations.read_images_together(images_dir= '../data/faces/Validation/',y_dir='../data/Validation/Annotations/')
 
 	rows, columns = x_train[0][0].shape[0], x_train[0][0].shape[0]
     
@@ -53,7 +53,7 @@ if __name__ == '__main__':
 				OPT = getOptimizer(opt,rate)
 				
 				model.compile(loss='mean_squared_error', optimizer=OPT,metrics=['mae','accuracy'])
-				model.fit(x_train, y_train, batch_size = 500, epochs = 100, verbose=0)
+				model.fit(x_train, y_train, batch_size = 50, epochs = 100, verbose=0)
 				scores = model.evaluate(x_test,y_test, verbose=0)[1]*100
 
 				print('\t\t\t\t Accuracy with validation data:  {0} %'.format(scores))
