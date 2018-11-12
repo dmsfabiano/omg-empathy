@@ -52,10 +52,12 @@ for i in range(0,len(train_landmarks_subject[0]),2):
 	y2_lm.append(train_landmarks_actor[0][i+1])
 
 plt.scatter(x_lm,y_lm)
+plt.gca().invert_yaxis()
 plt.savefig('../data/Visualization/face_subject.png')
 plt.clf()
 
 plt.scatter(x2_lm, y2_lm)
+plt.gca().invert_yaxis()
 plt.savefig('../data/Visualization/face_actor.png')
 plt.clf()
 
@@ -73,4 +75,5 @@ for i in range(0,len(train_fused_faces[0]),2):
 	y3_lm.append(train_fused_faces[0][i+1])
 
 plt.scatter(x3_lm,y3_lm)
+plt.gca().invert_yaxis()
 plt.savefig('../data/Visualization/face_fused.png')
