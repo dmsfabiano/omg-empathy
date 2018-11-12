@@ -65,10 +65,11 @@ def read_all_data(subject_list,story_list, data_directory = '../data/results/'):
     y_container = [[[] for story in range(0,len(story_list))] for subject in range(0,len(subject_list))]
     
     for file in file_list:
-       data = pd.read_csv(file,header=None,index_col=None)
+       f = data_directory + file
+       data = pd.read_csv(f,header=None,index_col=None)
        
-       subject = int(file.split('/')[-1].split('_')[1])
-       story = int(file.split('/')[-1].split('_')[-1])
+       subject = int(f.split('/')[-1].split('_')[1])
+       story = int(f.split('/')[-1].split('_')[-1][0])
        
        data_container[subject_list.index(subject)][story_list.index(story)] = data.iloc[:,0:5272].values
        y_container[subject_list.index(subject)][story_list.index(story)] = data.iloc[:,-1].values
