@@ -35,6 +35,7 @@ train_story_list = [2,4,5,8]
 validation_story_list =  [1]
 
 x_train,y_train = getData(train_sbj_list,train_story_list,'../data/results/Training/')
+x_validation,y_validation = getData(train_sbj_list,validation_story_list,'../data/results/Validation/')
 
 train_landmarks_subject, train_landmarks_actor, train_audio = [],[],[]
 validation_landmarks_subject, validation_landmarks_actor, validation_audio = [],[],[]
@@ -44,36 +45,27 @@ for video in x_train:
 		train_landmarks_subject.append(np.asarray(frame[0:136]))
 		train_landmarks_actor.append(np.asarray(frame[136:272]))
 
-x_lm, x2_lm, y_lm, y2_lm = [], [], [], []
-for i in range(0,len(train_landmarks_subject[0]),2):
-	x_lm.append(train_landmarks_subject[0][i])
-	y_lm.append(train_landmarks_subject[0][i+1])
-	x2_lm.append(train_landmarks_actor[0][i])
-	y2_lm.append(train_landmarks_actor[0][i+1])
-
-plt.scatter(x_lm,y_lm)
-plt.gca().invert_yaxis()
-plt.savefig('../data/Visualization/face_subject.png')
-plt.clf()
-
-plt.scatter(x2_lm, y2_lm)
-plt.gca().invert_yaxis()
-plt.savefig('../data/Visualization/face_actor.png')
-plt.clf()
+for video in x_validation:
+	for frame in video:
+		validation_landmarks_subject.append(np.asarray(frame[0:136]))
+		validation_landmarks_actor.append(np.asarray(frame[136:272]))
 
 # 1 Fuse both faces (landmarks)
-train_fused_faces = []
+train_fused_faces, validation_fused_faces = [], []
 
 for i in range(0,len(train_landmarks_subject)):
     train_fused_faces.append(fusion([train_landmarks_subject[i],train_landmarks_actor[i]]))
-    break
 train_fused_faces = np.asarray(train_fused_faces)
 
-x3_lm, y3_lm = [], []
-for i in range(0,len(train_fused_faces[0]),2):
-	x3_lm.append(train_fused_faces[0][i])
-	y3_lm.append(train_fused_faces[0][i+1])
+for i in range(0,len(validation_landmarks_subject)):
+    validation_fused_faces.append(fusion([validation_landmarks_subject[i],validation_landmarks_actor[i]]))
+validation_fused_faces = np.asarray(validation_fused_faces)
 
-plt.scatter(x3_lm,y3_lm)
-plt.gca().invert_yaxis()
-plt.savefig('../data/Visualization/face_fused.png')
+for j,landmarks in enumerate(train_fused_faces):
+	xlm,ylm = [],[]
+	for i in range(0,len(landmarks),2):
+		xlm.append(landmarks[i])
+		ylm.append(landmarks[i+1])
+	plt.scatter(x3_lm,y3_lm)
+	plt.gca().invert_yaxis()
+	plt.savefig('../data/Images/Training/'+str())

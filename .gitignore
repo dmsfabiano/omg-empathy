@@ -15,6 +15,10 @@ data/results/Training/*
 !data/results/Training/.gitkeep
 data/results/Validation/*
 !data/results/Validation/.gitkeep
+data/Images/Training/*
+!data/Images/Training/.gitkeep
+data/Images/Validation/*
+!data/Images/Validation/.gitkeep
 .git
 /scripts/c++-scripts/CMakeFiles
 /scripts/*.sh

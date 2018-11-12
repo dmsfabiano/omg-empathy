@@ -145,12 +145,12 @@ train_fused_deep_features, validation_fused_deep_features = [], []
 
 # 5.1 training
 for i in range(0,len(train_faceFeatures)):
-    train_fused_deep_features.append(fusion([train_faceFeatures[i],train_audioFeatures[i]]))
+    train_fused_deep_features.append(fusion([train_faceFeatures[0][i],train_audioFeatures[0][i]]))
 train_fused_deep_features = np.asarray(train_fused_deep_features)
 
 # 5.2 validation
 for i in range(0,len(validation_faceFeatures)):
-    validation_fused_deep_features.append(fusion([validation_faceFeatures[i],validation_audioFeatures[i]]))
+    validation_fused_deep_features.append(fusion([validation_faceFeatures[0][i],validation_audioFeatures[0][i]]))
 validation_fused_deep_features = np.asarray(validation_fused_deep_features)
 
 # 6 Create Final Regressor
