@@ -51,11 +51,13 @@ for i in range(0,len(train_landmarks_subject[0]),2):
 	x2_lm.append(train_landmarks_actor[0][i])
 	y2_lm.append(train_landmarks_actor[0][i+1])
 
-plt.plot(x_lm,y_lm)
+plt.scatter(x_lm,y_lm)
 plt.savefig('../data/Visualization/face_subject.png')
+plt.clf()
 
-plt.plot(x2_lm, y2_lm)
+plt.scatter(x2_lm, y2_lm)
 plt.savefig('../data/Visualization/face_actor.png')
+plt.clf()
 
 # 1 Fuse both faces (landmarks)
 train_fused_faces = []
@@ -70,5 +72,5 @@ for i in range(0,len(train_fused_faces[0]),2):
 	x3_lm.append(train_fused_faces[0][i])
 	y3_lm.append(train_fused_faces[0][i+1])
 
-plt.plot(x3_lm,y3_lm)
+plt.scatter(x3_lm,y3_lm)
 plt.savefig('../data/Visualization/face_fused.png')

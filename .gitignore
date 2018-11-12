@@ -19,6 +19,7 @@ data/results/Validation/*
 /scripts/c++-scripts/CMakeFiles
 /scripts/*.sh
 /scripts/*.out
+/scripts/__pycache__
 /scripts/c++-scripts/CMakeCache.txt
 /scripts/c++-scripts/FaceDetector
 /scripts/c++-scripts/cmake_install.cmake

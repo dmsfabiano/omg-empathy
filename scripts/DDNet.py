@@ -81,13 +81,13 @@ for video in x_train:
 	for frame in video:
 		train_landmarks_subject.append(np.asarray(frame[0:136]))
 		train_landmarks_actor.append(np.asarray(frame[136:272]))
-		train_audio.append(np.asarray([f for f in frame[272:5272]]))
+		train_audio.append(np.asarray(frame[272:5272]))
 
 for video in x_validation:
 	for frame in video:
 		validation_landmarks_subject.append(np.asarray(frame[0:136]))
 		validation_landmarks_actor.append(np.asarray(frame[136:272]))
-		validation_audio.append(np.asarray([f for f in frame[272:5272]]))
+		validation_audio.append(np.asarray(frame[272:5272]))
 
 temp = []
 for video in y_train:
@@ -114,14 +114,14 @@ validation_fused_faces = np.asarray(validation_fused_faces)
 
 # 2 Create and Train Face Feature Extractor (NEEDS TUNING ~ HARDCODED HYPERPARAMETERS)
 faceFeatureExtractor = CreateRegressor(input_neurons = len(train_fused_faces[0]), output_neurons=100,hidden_layers=10,learning_rate=0.1, optimizer='adam',hidden_neurons=int((136+1)/2))
-faceFeatureExtractor = trainRegressor(faceFeatureExtractor,train_fused_faces,y_train,epochs=250,batches= 500)
+faceFeatureExtractor = trainRegressor(faceFeatureExtractor,train_fused_faces,y_train,epochs=100,batches= 500)
 print('Fused Faces Accuracy: {}%'.format(faceFeatureExtractor.evaluate(validation_fused_faces,y_validation, verbose=1)[1]*100))
 
 
 # 3 Create and Train audio Feature Extractor
 audioFeatureExtractor = CreateRegressor(input_neurons = len(train_audio[0]), output_neurons=100,hidden_layers=2,learning_rate=0.001, optimizer='adam',hidden_neurons=int((len(train_audio[0])+1)/2))
-audioFeatureExtractor = trainRegressor(audioFeatureExtractor,train_audio,y_train,epochs=100,batches= 500)
-print('Audio Accuracy: {}%'.format(audioFeatureExtractor.evaluate(validation_audio,y_validation, verbose=1)[1]*100))
+audioFeatureExtractor = trainRegressor(audioFeatureExtractor,np.asarray(train_audio),y_train,epochs=100,batches= 500)
+print('Audio Accuracy: {}%'.format(audioFeatureExtractor.evaluate(np.asarray(validation_audio),y_validation, verbose=1)[1]*100))
 
 # 4 Crete Deep feature Container
 train_faceFeatures,train_audioFeatures = [],[]
