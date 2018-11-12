@@ -81,13 +81,13 @@ for video in x_train:
 	for frame in video:
 		train_landmarks_subject.append(np.asarray(frame[0:136]))
 		train_landmarks_actor.append(np.asarray(frame[136:272]))
-		train_audio.append(np.asarray([f[0] for f in frame[272:5272]]))
+		train_audio.append(np.asarray([f for f in frame[272:5272]]))
 
 for video in x_validation:
 	for frame in video:
 		validation_landmarks_subject.append(np.asarray(frame[0:136]))
 		validation_landmarks_actor.append(np.asarray(frame[136:272]))
-		validation_audio.append(np.asarray([f[0] for f in frame[272:5272]]))
+		validation_audio.append(np.asarray([f for f in frame[272:5272]]))
 
 temp = []
 for video in y_train:

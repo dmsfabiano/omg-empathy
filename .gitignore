@@ -17,9 +17,8 @@ data/results/Validation/*
 !data/results/Validation/.gitkeep
 .git
 /scripts/c++-scripts/CMakeFiles
-/scripts/job.sh
-/scripts/submit_job.sh
-/scripts/results.out
+/scripts/*.sh
+/scripts/*.out
 /scripts/c++-scripts/CMakeCache.txt
 /scripts/c++-scripts/FaceDetector
 /scripts/c++-scripts/cmake_install.cmake
