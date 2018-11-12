@@ -7,21 +7,23 @@ from keras.optimizers import RMSprop, adam,adamax, Nadam
 from keras import metrics
 from sklearn.preprocessing import StandardScaler
 from keras import backend as K
+import tensorflow as tf
 from scipy.stats import pearsonr
 
 def ccc(y_true, y_pred):
-    true_mean = np.mean(y_true)
-    pred_mean = np.mean(y_pred)
+    true_mean = K.mean(y_true)
+    pred_mean = K.mean(y_pred)
 
-    rho,_ = pearsonr(y_pred,y_true)
+    #rho,_ = pearsonr(y_pred,y_true)
+    pearson_r, update_op = tf.contrib.metrics.streaming_pearson_correlation(y_pred, y_true, name='pearson_r')
+                                                                             
+    std_predictions = K.std(y_pred)
 
-    std_predictions = np.std(y_pred)
+    std_gt = K.std(y_true)
+    
 
-    std_gt = np.std(y_true)
-
-    ccc = 2 * rho * std_gt * std_predictions / (
-        std_predictions ** 2 + std_gt ** 2 +
-        (pred_mean - true_mean) ** 2)
+    ccc = tf.divide(2 * tf.multiply(tf.multiply(pearson_r,std_gt),std_predictions),tf.add(tf.add(tf.multiply(std_predictions,std_predictions),tf.multiply(std_gt,std_gt)), 
+        tf.multiply(tf.subtract(pred_mean,true_mean),tf.subtract(pred_mean,true_mean)))) 
 
     return ccc
 
