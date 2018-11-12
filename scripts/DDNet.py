@@ -38,8 +38,7 @@ def CreateRegressor(input_neurons, output_neurons,hidden_layers,learning_rate, o
     
     for i in range(0,hidden_layers):
         model.add(Dense(units = hidden_neurons, kernel_initializer = 'uniform',activation = 'relu'))
-        if i % 2 == 1:
-            model.add(Dropout(0.3))
+
     model.add(Dense(units = output_neurons, kernel_initializer = 'uniform',activation = 'relu'))
     model.add(Dense(1,activation='linear'))
 
@@ -113,14 +112,14 @@ for i in range(0,len(validation_landmarks_subject)):
 validation_fused_faces = np.asarray(validation_fused_faces)
 
 # 2 Create and Train Face Feature Extractor (NEEDS TUNING ~ HARDCODED HYPERPARAMETERS)
-faceFeatureExtractor = CreateRegressor(input_neurons = len(train_fused_faces[0]), output_neurons=100,hidden_layers=10,learning_rate=0.1, optimizer='adam',hidden_neurons=int((136+1)/2))
-faceFeatureExtractor = trainRegressor(faceFeatureExtractor,train_fused_faces,y_train,epochs=100,batches= 500)
+faceFeatureExtractor = CreateRegressor(input_neurons = len(train_fused_faces[0]), output_neurons=100,hidden_layers=2,learning_rate=0.1, optimizer='adam',hidden_neurons=int((136+1)/2))
+faceFeatureExtractor = trainRegressor(faceFeatureExtractor,train_fused_faces,y_train,epochs=10,batches= 500)
 print('Fused Faces Accuracy: {}%'.format(faceFeatureExtractor.evaluate(validation_fused_faces,y_validation, verbose=1)[1]*100))
 
 
 # 3 Create and Train audio Feature Extractor
 audioFeatureExtractor = CreateRegressor(input_neurons = len(train_audio[0]), output_neurons=100,hidden_layers=2,learning_rate=0.001, optimizer='adam',hidden_neurons=int((len(train_audio[0])+1)/2))
-audioFeatureExtractor = trainRegressor(audioFeatureExtractor,np.asarray(train_audio),y_train,epochs=100,batches= 500)
+audioFeatureExtractor = trainRegressor(audioFeatureExtractor,np.asarray(train_audio),y_train,epochs=10,batches= 500)
 print('Audio Accuracy: {}%'.format(audioFeatureExtractor.evaluate(np.asarray(validation_audio),y_validation, verbose=1)[1]*100))
 
 # 4 Crete Deep feature Container
@@ -128,21 +127,17 @@ train_faceFeatures,train_audioFeatures = [],[]
 validation_faceFeatures,validation_audioFeatures = [],[]
 
 # 4.1 training
-for instance in train_fused_faces:
-    train_faceFeatures.append(np.array(getDeepFeatures(faceFeatureExtractor,instance)))
+train_faceFeatures.append(getDeepFeatures(faceFeatureExtractor,train_fused_faces))
 train_faceFeatures = np.asarray(train_faceFeatures)
 
-for instance in train_audio:
-    train_audioFeatures.append(np.array(getDeepFeatures(audioFeatureExtractor,instance)))
+train_audioFeatures.append(getDeepFeatures(audioFeatureExtractor,train_audio))
 train_audioFeatures = np.asarray(train_audioFeatures)
 
 # 4.2 validation
-for instance in validation_fused_faces:
-    validation_faceFeatures.append(np.array(getDeepFeatures(faceFeatureExtractor,instance)))
+validation_faceFeatures.append(getDeepFeatures(faceFeatureExtractor,validation_fused_faces))
 validation_faceFeatures = np.asarray(validation_faceFeatures)
 
-for instance in validation_audio:
-    validation_audioFeatures.append(np.array(getDeepFeatures(audioFeatureExtractor,instance)))
+validation_audioFeatures.append(getDeepFeatures(audioFeatureExtractor,validation_audio))
 validation_audioFeatures = np.asarray(validation_audioFeatures)
 
 # 5 Fuse Deep features
