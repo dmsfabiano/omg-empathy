@@ -66,6 +66,15 @@ for j,landmarks in enumerate(train_fused_faces):
 	for i in range(0,len(landmarks),2):
 		xlm.append(landmarks[i])
 		ylm.append(landmarks[i+1])
-	plt.scatter(x3_lm,y3_lm)
+	plt.scatter(xlm,ylm)
 	plt.gca().invert_yaxis()
-	plt.savefig('../data/Images/Training/'+str())
+	plt.savefig('../data/Images/Training/frame_'+str(j)+'_point'+str(i)+'.png')
+
+for j,landmarks in enumerate(validation_fused_faces):
+	xlm,ylm = [],[]
+	for i in range(0,len(landmarks),2):
+		xlm.append(landmarks[i])
+		ylm.append(landmarks[i+1])
+	plt.scatter(xlm,ylm)
+	plt.gca().invert_yaxis()
+	plt.savefig('../data/Images/Validation/frame_'+str(j)+'_point'+str(i)+'.png')
