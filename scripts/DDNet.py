@@ -88,6 +88,15 @@ for video in x_validation:
 		validation_landmarks_actor.append(np.asarray(frame[136:272]))
 		validation_audio.append(np.asarray(frame[272:5272]))
 
+scaler = StandardScaler()
+train_landmarks_subject = scaler.fit_transform(train_landmarks_subject)
+train_landmarks_actor = scaler.fit_transform(train_landmarks_actor)
+train_audio = scaler.fit_transform(train_audio)
+
+validation_landmarks_subject = scaler.fit_transform(validation_landmarks_subject)
+validation_landmarks_actor = scaler.fit_transform(validation_landmarks_actor)
+validation_audio = scaler.fit_transform(validation_audio)
+
 temp = []
 for video in y_train:
 	temp.extend(video)

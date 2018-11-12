@@ -10,21 +10,24 @@ from keras import metrics
 import tensorflow as tf
 from scipy.stats import pearsonr
 
+
 def ccc(y_true, y_pred):
-    # covariance between y_true and y_pred
-    N = K.int_shape(y_pred)[-1]
-    s_xy = 1.0 / (N - 1.0 + K.epsilon()) * K.sum((y_true - K.mean(y_true)) * (y_pred - K.mean(y_pred)))
-    # means
-    x_m = K.mean(y_true)
-    y_m = K.mean(y_pred)
-    # variances
-    s_x_sq = K.var(y_true)
-    s_y_sq = K.var(y_pred)
+    true_mean = K.mean(y_true)
+    pred_mean = K.mean(y_pred)
+
+    #rho,_ = pearsonr(y_pred,y_true)
+    pearson_r, update_op = tf.contrib.metrics.streaming_pearson_correlation(y_pred, y_true, name='pearson_r')
+                                                                             
+    std_predictions = K.std(y_pred)
+
+    std_gt = K.std(y_true)
     
-    # condordance correlation coefficient
-    c = (2.0*s_xy) / (s_x_sq + s_y_sq + (x_m-y_m)**2)
-    
-    return c
+
+    ccc = tf.divide(2 * tf.multiply(tf.multiply(pearson_r,std_gt),std_predictions),tf.add(tf.add(tf.multiply(std_predictions,std_predictions),tf.multiply(std_gt,std_gt)), 
+        tf.multiply(tf.subtract(pred_mean,true_mean),tf.subtract(pred_mean,true_mean)))) 
+
+    return ccc
+
 
 def fusion(data_container):
    
@@ -104,6 +107,11 @@ for video in x_validation:
 	for frame in video:
 		validation_audio.append(np.asarray(frame[272:5272]))
 
+scaler = StandardScaler()
+train_audio = scaler.fit_transform(train_audio)
+
+validation_audio = scaler.fit_transform(validation_audio)
+
 temp = []
 for video in y_train:
 	temp.extend(video)
@@ -137,5 +145,5 @@ for opt in optimizers:
                     accuracy = metric[2] * 100
                     CCC = metric[3]
                     
-                    print('Audio statistics: {0} mse, {1}% accuracy, and {2} ccc \n with parameters: {3} optimizer, rate: {4}, {5} hlayers, {6} hneurons, {7} dim neurons'.format(
+                    print('Audio statistics: {0} mse, {1}% accuracy, and {3} ccc \n with parameters: {4} optimizer, rate: {5}, {6} hlayers, {7} hneurons, {8} dim neurons'.format(
                             mse,accuracy,CCC,opt,rate,hLayers,hNeurons,outNeurons))
