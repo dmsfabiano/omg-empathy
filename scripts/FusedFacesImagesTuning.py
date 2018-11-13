@@ -10,21 +10,18 @@ from keras import callbacks
 
 
 def ccc(y_true, y_pred):
-    # covariance between y_true and y_pred
-    N = K.int_shape(y_pred)[-1]
-    s_xy = 1.0 / (N - 1.0 + K.epsilon()) * K.sum((y_true - K.mean(y_true)) * (y_pred - K.mean(y_pred)))
-    # means
-    x_m = K.mean(y_true)
-    y_m = K.mean(y_pred)
-    # variances
-    s_x_sq = K.var(y_true)
-    s_y_sq = K.var(y_pred)
-    
-    # condordance correlation coefficient
-    c = (2.0*s_xy) / (s_x_sq + s_y_sq + (x_m-y_m)**2)
-    
-    return c
+    x = y_true
+    y = y_pred
+    mx = K.mean(x)
+    my = K.mean(y)
+    xm, ym = x-mx, y-my
+    r_num = K.sum(tf.multiply(xm,ym))
+    r_den = K.sqrt(tf.multiply(K.sum(K.square(xm)), K.sum(K.square(ym))))
+    r = r_num / r_den
 
+    r = K.maximum(K.minimum(r, 1.0), -1.0)
+    return 1 - K.square(r)
+    
 def fusion(data_container):
    
     scaler = MinMaxScaler(feature_range=(0.5,1))
@@ -90,7 +87,7 @@ def CreateConv2DRegressor(shape, output_neurons,learning_rate, optimizer,kernel,
     model.add(Dense(output_neurons, activation='relu'))
     model.add(Dropout(0.5))
     model.add(Dense(1,activation='linear'))
-    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = 'mean_squared_error', metrics =  ['mse','accuracy',ccc])
+    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = 'mean_squared_error', metrics =  ['mse','accuracy',ccc, 'mae'])
 
     return model
 
@@ -172,10 +169,11 @@ for ker in kernels:
                         mse = metric[1]
                         accuracy = metric[2] * 100
                         CCC = metric[3]
+                        mae = metric[4]
                     
                         dim_reduct = 'increasing'
                         if mode:
                             dim_reduct = 'decreasing'
                             
-                        print('Faces images statistics: {0} mse, {1}% accuracy, and {2} ccc \n with parameters: {3} optimizer, rate: {4}, {5} kernel size, {6} output dimentions, {7} dim neurons, and mode: {8}'.format(
-                                mse,accuracy,CCC,opt,rate,ker,out_dim,outNeurons.dim_reduct))
+                        print('Faces images statistics: {0} mse, {1}% accuracy, and {2} ccc \n with parameters: {3} optimizer, rate: {4}, {5} kernel size, {6} output dimentions, {7} dim neurons, and mode: {8}, MAE: {9}'.format(
+                                mse,accuracy,CCC,opt,rate,ker,out_dim,outNeurons,dim_reduct,mae))
