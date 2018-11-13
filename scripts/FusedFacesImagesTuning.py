@@ -142,8 +142,8 @@ for video in y_validation:
 y_validation = temp.copy()
 
 # DDNet Structure
-train_images = fp.read_landmark_images('../data/results/Training/')
-validation_images = fp.read_landmark_images('../data/results/Validation/')
+train_images = fp.read_landmark_images('../data/Images/Training/')
+validation_images = fp.read_landmark_images('../data/Images/Validation/')
 
 kernels = [3,5,7,9, 11]
 output_dim = [16,32,64]

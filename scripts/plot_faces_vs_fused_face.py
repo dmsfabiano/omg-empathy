@@ -8,6 +8,8 @@ from keras.optimizers import RMSprop, adam,adamax, Nadam
 from sklearn.preprocessing import StandardScaler
 from keras import backend as K
 import matplotlib.pyplot as plt
+from multiprocessing import Pool
+from cv2 import imwrite, resize
 
 def fusion(data_container):
    
@@ -62,26 +64,29 @@ for i in range(0,len(validation_landmarks_subject)):
     validation_fused_faces.append(fusion([validation_landmarks_subject[i],validation_landmarks_actor[i]]))
 validation_fused_faces = np.asarray(validation_fused_faces)
 
-for j,landmarks in enumerate(train_fused_faces):
-	xlm,ylm = [],[]
-	for i in range(0,len(landmarks),2):
-		xlm.append(landmarks[i])
-		ylm.append(landmarks[i+1])
-	plt.scatter(xlm,ylm)
-	plt.gca().invert_yaxis()
-	plt.axis('off')
-	plt.savefig('../data/Images/Training/frame_'+str(j)+'_point'+str(i)+'.png', bbox_inches='tight')
-	Image.open('../data/Images/Training/frame_'+str(j)+'_point'+str(i)+'.png').convert('L').save('../data/Images/Training/frame_'+str(j)+'_point'+str(i)+'.png')
-	plt.clf()
+global j
+global flag
 
-for j,landmarks in enumerate(validation_fused_faces):
+j = 0
+flag = False
+
+def writeImages(landmarks):
 	xlm,ylm = [],[]
 	for i in range(0,len(landmarks),2):
-		xlm.append(landmarks[i])
-		ylm.append(landmarks[i+1])
-	plt.scatter(xlm,ylm)
-	plt.gca().invert_yaxis()
-	plt.axis('off')
-	plt.savefig('../data/Images/Validation/frame_'+str(j)+'_point'+str(i)+'.png', bbox_inches='tight')
-	Image.open('../data/Images/Training/frame_'+str(j)+'_point'+str(i)+'.png').convert('L').save('../data/Images/Training/frame_'+str(j)+'_point'+str(i)+'.png')
-	plt.clf()
+		xlm.append(int(landmarks[i]))
+		ylm.append(int(landmarks[i+1]))
+	height = max(ylm)
+	width = max(xlm)
+	ylm = [height-y for y in ylm]
+	matrix = np.zeros((width+1, height+1, 1), dtype = "uint8")
+	for value in range(len(xlm)):
+		matrix[xlm[value]][ylm[value]] = 255
+	imwrite('../data/Images/Training/frame_'+str(j)+'_.png' if not flag else '../data/Images/Validation/frame_'+str(j)+'_.png', resize(matrix,128,128))
+	j += 1
+
+pool = Pool()
+pool.map(writeImages,train_fused_faces)
+
+j = 0
+flag = True
+pool.map(writeImages,validation_fused_faces)
