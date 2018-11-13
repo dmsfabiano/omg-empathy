@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
-from cv2 import imread
+from cv2 import imread, resize
 from scipy.io.wavfile import read
 
 def read_images_together(images_dir= '../data/faces/Training/',
@@ -77,7 +77,12 @@ def read_all_data(subject_list,story_list, data_directory = '../data/results/'):
     return np.asarray(data_container),np.asarray(y_container)
         
 
-            
-            
-    
-    
+def read_landmark_images(data_directory='../data/Images/'):
+	frameNumber = {}
+	for root, path, files in os.walk(data_directory):
+		for file in files:
+			if file.endswith('.png'):
+				frame = file.split('/')[-1].split('_')[1]
+				frameNumber[frame] = cv2.resize(cv2.imread(os.path.join(root,file)),128,128)
+	orderedByFrame = sorted(frameNumber.items(), key=lambda k: k[0])
+	return np.array(orderedByFrame.values())
