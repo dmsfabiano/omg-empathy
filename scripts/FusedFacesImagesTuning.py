@@ -20,20 +20,29 @@ def ccc(y_true, y_pred):
     r = r_num / r_den
 
     r = K.maximum(K.minimum(r, 1.0), -1.0)
+    rho = 1 - K.square(r)
+
+    numerator = tf.multiply(tf.multiply(tf.scalar_mul(2,rho),K.std(x)),K.std(y))
+    
+    mean_differences = K.square(my - mx)
+    std_predictions_squared = K.square(K.std(y))
+    std_true_squared = K.square(K.std(x))
+    
+    denominator = tf.add(tf.add(std_predictions_squared,std_true_squared),mean_differences)
+    return numerator/denominator
+
+def pearsonr(y_true,ypred):
+    x = y_true
+    y = y_pred
+    mx = K.mean(x)
+    my = K.mean(y)
+    xm, ym = x-mx, y-my
+    r_num = K.sum(tf.multiply(xm,ym))
+    r_den = K.sqrt(tf.multiply(K.sum(K.square(xm)), K.sum(K.square(ym))))
+    r = r_num / r_den
+
+    r = K.maximum(K.minimum(r, 1.0), -1.0)
     return 1 - K.square(r)
-    
-def fusion(data_container):
-   
-    scaler = MinMaxScaler(feature_range=(0.5,1))
-    variance_container = np.array([np.var(signal) for signal in data_container])
-    variance_container = scaler.fit_transform(np.reshape(variance_container, newshape=(-1,1)))
-    
-    weighted_container = np.array([0.0 for i in range(0,len(data_container[0]))])
-    
-    for index,signal in enumerate(data_container):
-        signal = np.multiply(np.asarray(signal),variance_container[index])
-        weighted_container = np.add(weighted_container,signal)
-    return weighted_container
 
 def getOptimizer(name,rate):
     if name is 'adamax':
@@ -91,7 +100,7 @@ def CreateConv2DRegressor(shape, output_neurons,learning_rate, optimizer,kernel,
 
     return model
 
-def trainRegressor(model,x,y,epochs,batches,verb,calls):
+def trainRegressor(model,x,y,epochs,batches,verb=1,calls):
     model.fit(x, y, batch_size = batches, epochs = epochs, verbose=verb,callbacks=calls)
     return model
 
@@ -163,17 +172,18 @@ for ker in kernels:
                 
                         ConvReg = CreateConv2DRegressor(shape=(128,128,1), output_neurons=outNeurons,learning_rate=rate, optimizer=opt,kernel=ker,initial_dimention=out_dim, decreasing=mode)
                         earlyStop = callbacks.EarlyStopping(monitor='loss',min_delta=0.01,patience=5)
-                        ConvReg = trainRegressor(ConvReg,np.asarray(train_images),y_train,epochs=100,batches=250,calls=[earlyStop],verb=1)
+                        ConvReg = trainRegressor(ConvReg,np.asarray(train_images),y_train,epochs=100,batches=250,calls=[earlyStop])
 
                         metric = ConvReg.evaluate(np.asarray(validation_images),y_validation, verbose=1)
                         mse = metric[1]
                         accuracy = metric[2] * 100
                         CCC = metric[3]
                         mae = metric[4]
+                        r = metric[5]
                     
                         dim_reduct = 'increasing'
                         if mode:
                             dim_reduct = 'decreasing'
                             
-                        print('Faces images statistics: {0} mse, {1}% accuracy, and {2} ccc \n with parameters: {3} optimizer, rate: {4}, {5} kernel size, {6} output dimentions, {7} dim neurons, and mode: {8}, MAE: {9}'.format(
-                                mse,accuracy,CCC,opt,rate,ker,out_dim,outNeurons,dim_reduct,mae))
+                        print('Faces images statistics: {0} mse, {1}% accuracy, and {2} ccc \n with parameters: {3} optimizer, rate: {4}, {5} kernel size, {6} output dimentions, {7} dim neurons, and mode: {8}, MAE: {9}, R:{10}'.format(
+                                mse,accuracy,CCC,opt,rate,ker,out_dim,outNeurons,dim_reduct,mae,r))

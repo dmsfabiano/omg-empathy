@@ -20,6 +20,28 @@ def ccc(y_true, y_pred):
     r = r_num / r_den
 
     r = K.maximum(K.minimum(r, 1.0), -1.0)
+    rho = 1 - K.square(r)
+
+    numerator = tf.multiply(tf.multiply(tf.scalar_mul(2,rho),K.std(x)),K.std(y))
+    
+    mean_differences = K.square(my - mx)
+    std_predictions_squared = K.square(K.std(y))
+    std_true_squared = K.square(K.std(x))
+    
+    denominator = tf.add(tf.add(std_predictions_squared,std_true_squared),mean_differences)
+    return numerator/denominator
+
+def pearsonr(y_true,ypred):
+    x = y_true
+    y = y_pred
+    mx = K.mean(x)
+    my = K.mean(y)
+    xm, ym = x-mx, y-my
+    r_num = K.sum(tf.multiply(xm,ym))
+    r_den = K.sqrt(tf.multiply(K.sum(K.square(xm)), K.sum(K.square(ym))))
+    r = r_num / r_den
+
+    r = K.maximum(K.minimum(r, 1.0), -1.0)
     return 1 - K.square(r)
 
 def fusion(data_container):
@@ -58,11 +80,11 @@ def CreateRegressor(input_neurons, output_neurons,hidden_layers,learning_rate, o
     model.add(Dense(units = output_neurons, kernel_initializer = 'uniform',activation = 'relu'))
     model.add(Dense(1,activation='linear'))
 
-    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = 'mean_squared_error', metrics =  ['mse','accuracy',ccc, 'mae'])
+    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = 'mean_squared_error', metrics =  ['mse','accuracy',ccc, 'mae', pearsonr])
             
     return model
 
-def trainRegressor(model,x,y,epochs,batches,verb,calls):
+def trainRegressor(model,x,y,epochs,batches,verb=1,calls):
     model.fit(x, y, batch_size = batches, epochs = epochs, verbose=verb,callbacks=calls)
     return model
 
@@ -131,12 +153,14 @@ for opt in optimizers:
                     audioFeatureExtractor = CreateRegressor(input_neurons = len(train_audio[0]), output_neurons=outNeurons,hidden_layers=hLayers,learning_rate=rate,
                                                             optimizer=opt,hidden_neurons=hNeurons)
                     earlyStop = callbacks.EarlyStopping(monitor='loss',min_delta=0.01,patience=5)
-                    audioFeatureExtractor = trainRegressor(audioFeatureExtractor,np.asarray(train_audio),y_train,epochs=100,batches= 250,calls=[earlyStop],verb=1)
+                    audioFeatureExtractor = trainRegressor(audioFeatureExtractor,np.asarray(train_audio),y_train,epochs=100,batches= 250,calls=[earlyStop])
                     
                     metric = audioFeatureExtractor.evaluate(np.asarray(validation_audio),y_validation, verbose=1)
                     mse = metric[1]
                     accuracy = metric[2] * 100
                     CCC = metric[3]
+                    mae = metric[4]
+                    r = metric[5]
                     
-                    print('Audio statistics: {0} mse, {1}% accuracy, and {2} ccc \n with parameters: {3} optimizer, rate: {4}, {5} hlayers, {6} hneurons, {7} dim neurons'.format(
-                            mse,accuracy,CCC,opt,rate,hLayers,hNeurons,outNeurons))
+                    print('Audio statistics: {0} mse, {1}% accuracy, {2} ccc, {3} mae, {4} r \n with parameters: {5} optimizer, rate: {6}, {7} hlayers, {8} hneurons, {9} dim neurons '.format(
+                            mse,accuracy,CCC,mae,r,opt,rate,hLayers,hNeurons,outNeurons))
