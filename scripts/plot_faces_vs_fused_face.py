@@ -74,7 +74,6 @@ for j,landmarks in enumerate(train_fused_faces):
 	Image.open('../data/Images/Training/frame_'+str(j)+'_point'+str(i)+'.png').convert('L').save('../data/Images/Training/frame_'+str(j)+'_point'+str(i)+'.png')
 	plt.clf()
 
-
 for j,landmarks in enumerate(validation_fused_faces):
 	xlm,ylm = [],[]
 	for i in range(0,len(landmarks),2):
