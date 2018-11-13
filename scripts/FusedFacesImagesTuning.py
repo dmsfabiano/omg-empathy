@@ -2,7 +2,7 @@ import file_operations as fp
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Flatten
+from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Flatten, BatchNormalization
 import operator
 from keras.optimizers import RMSprop, adam,adamax, Nadam
 from keras import backend as K
@@ -75,16 +75,20 @@ def CreateConv2DRegressor(shape, output_neurons,learning_rate, optimizer,kernel,
         
     model = Sequential()
     model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu',input_shape=shape))
-    model.add(Dropout(0.2))
+    model.add(BatchNormalization())
     next_dimention = func(initial_dimention,2)
     model.add(Conv2D(next_dimention, kernel_size=kernel,activation='relu'))
     model.add(MaxPooling2D(pool_size=(2,2), padding='same'))
+    model.add(Dropout(0.2))
+    model.add(BatchNormalization())
     next_dimention = func(next_dimention,2)
     model.add(Conv2D(next_dimention, kernel, activation='relu'))
     model.add(MaxPooling2D(pool_size=(2,2), padding='same'))
+    model.add(BatchNormalization())
+    model.add(Dropout(0.25))
     model.add(Flatten())
     model.add(Dense(output_neurons, activation='relu'))
-    #model.add(Dropout(0.5))
+    model.add(Dropout(0.5))
     model.add(Dense(1,activation='linear'))
     model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = 'mean_squared_error', metrics =  ['mse','accuracy',ccc])
 
