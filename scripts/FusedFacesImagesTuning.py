@@ -172,9 +172,9 @@ for out_dim in output_dim:
         for outNeurons in output_neurons:
             
             ConvReg = CreateConv2DRegressor(shape=(128,128,1), output_neurons=outNeurons,learning_rate=0.1, optimizer='adam',kernel=3,initial_dimention=out_dim, decreasing=mode)
-            reduceLR = callbacks.ReduceLROnPlateau(monitor=ccc_loss,factor=0.2,patience=10,verbose=1,mode='min')
+            reduceLR = callbacks.ReduceLROnPlateau(monitor=ccc_loss,factor=0.5,patience=10,verbose=1,mode='auto',min_lr=0.0000001,min_delta=0.001)
             
-            ConvReg,history = trainRegressor(ConvReg,np.asarray(train_images),y_train,epochs=250,batches= 250,calls=[reduceLR], verb=2)
+            ConvReg,history = trainRegressor(ConvReg,np.asarray(train_images),y_train,epochs=100,batches= 250,calls=[reduceLR], verb=2)
 
             loss_values = history.history['loss']
             mse_values = history.history['mse']
