@@ -82,6 +82,6 @@ def read_landmark_images(data_directory='../data/Images/'):
 		for file in files:
 			if file.endswith('.png'):
 				frame = file.split('/')[-1].split('_')[1]
-				frameNumber[frame] = imread(os.path.join(root,file))
+				frameNumber[frame] = np.reshape(imread(os.path.join(root,file)),(256,256,1))
 	orderedByFrame = sorted(frameNumber.items(), key=lambda k: k[0])
 	return np.asarray([frame[1] for frame in orderedByFrame])

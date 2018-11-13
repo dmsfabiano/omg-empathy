@@ -10,6 +10,7 @@ from keras import backend as K
 import matplotlib.pyplot as plt
 from multiprocessing import Pool,Lock
 from cv2 import imwrite, resize
+from scipy import signal
 
 def fusion(data_container):
    
@@ -40,43 +41,27 @@ validation_story_list =  [1]
 x_train,y_train = getData(train_sbj_list,train_story_list,'../data/results/Training/')
 x_validation,y_validation = getData(train_sbj_list,validation_story_list,'../data/results/Validation/')
 
-train_landmarks_subject, train_landmarks_actor, train_audio = [],[],[]
-validation_landmarks_subject, validation_landmarks_actor, validation_audio = [],[],[]
+train_audio = []
+validation_audio = []
 
 for video in x_train:
 	for frame in video:
-		train_landmarks_subject.append(np.asarray(frame[0:136]))
-		train_landmarks_actor.append(np.asarray(frame[136:272]))
+		train_audio.append(np.asarray(frame[272:5272]))
 
 for video in x_validation:
 	for frame in video:
-		validation_landmarks_subject.append(np.asarray(frame[0:136]))
-		validation_landmarks_actor.append(np.asarray(frame[136:272]))
+		validation_audio.append(np.asarray(frame[272:5272]))
 
-# 1 Fuse both faces (landmarks)
-train_fused_faces, validation_fused_faces = [], []
+def writeImages(audio,j,flag):
+	f,t,_ = signal.spectrogram(audio)
+	height = max(f)
+	width = max(t)
+	matrix = np.zeros((int(height)+1, int(width)+1, 1), dtype = "uint8")
+	for value in range(len(t)):
+		matrix[int(f[value])][int(t[value])] = 255
+	imwrite('../data/Spectograms/Training/frame_'+str(j)+'_.png' if flag == False else '../data/Spectograms/Validation/frame_'+str(j)+'_.png', resize(matrix,(256,256)))
 
-for i in range(0,len(train_landmarks_subject)):
-    train_fused_faces.append(fusion([train_landmarks_subject[i],train_landmarks_actor[i]]))
-train_fused_faces = np.asarray(train_fused_faces)
-
-for i in range(0,len(validation_landmarks_subject)):
-    validation_fused_faces.append(fusion([validation_landmarks_subject[i],validation_landmarks_actor[i]]))
-validation_fused_faces = np.asarray(validation_fused_faces)
-
-def writeImages(landmarks,j,flag):
-	xlm,ylm = [],[]
-	for i in range(0,len(landmarks),2):
-		xlm.append(int(landmarks[i]))
-		ylm.append(int(landmarks[i+1]))
-	height = max(ylm)
-	width = max(xlm)
-	matrix = np.zeros((height+1, width+1, 1), dtype = "uint8")
-	for value in range(len(xlm)):
-		matrix[ylm[value]][xlm[value]] = 255
-	imwrite('../data/Images/Training/frame_'+str(j)+'_.png' if flag == False else '../data/Images/Validation/frame_'+str(j)+'_.png', resize(matrix,(256,256)))
-
-for j,face in enumerate(train_fused_faces):
+for j,face in enumerate(train_audio):
 	writeImages(face,j,False)
-for j,face in enumerate(validation_fused_faces):
+for j,face in enumerate(validation_audio):
 	writeImages(face,j,True)

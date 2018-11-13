@@ -37,7 +37,7 @@ def ccc_loss(y_true, y_pred):
     c_value = ccc(y_true,y_pred)  
     return (1 - c_value)/2
 
-def pearsonr(y_true,ypred):
+def pearsonr(y_true,y_pred):
     x = y_true
     y = y_pred
     mx = K.mean(x)
@@ -90,7 +90,7 @@ def CreateRegressor(input_neurons, output_neurons,hidden_layers,learning_rate, o
             
     return model
 
-def trainRegressor(model,x,y,epochs,batches,verb=1,calls):
+def trainRegressor(model,x,y,epochs,batches,verb,calls):
     history = model.fit(x, y, batch_size = batches, epochs = epochs, verbose=verb, callbacks=calls)
     return model,history
 
@@ -168,9 +168,9 @@ for outNeurons in output_neurons:
     faceFeatureExtractor = CreateRegressor(input_neurons = len(train_fused_faces[0]), output_neurons=outNeurons,hidden_layers=5,learning_rate=0.1,
                                            optimizer='adam',hidden_neurons=len(train_fused_faces[0]))
     
-    reduceLR = callbacks.ReduceLROnPlateau(monitor=ccc_loss,factor=0.2,patience=10,verbose=1,mode='min')
+    reduceLR = callbacks.ReduceLROnPlateau(monitor=ccc_loss,factor=0.5,patience=10,verbose=1,mode='auto',min_delta=0.001,min_lr=0.0000001)
     
-    faceFeatureExtractor,history = trainRegressor(faceFeatureExtractor,train_fused_faces,y_train,epochs=250,batches= 250,calls=[reduceLR], verb=2)
+    faceFeatureExtractor,history = trainRegressor(faceFeatureExtractor,train_fused_faces,y_train,epochs=100,batches= 250,calls=[reduceLR], verb=2)
     
     loss_values = history.history['loss']
     mse_values = history.history['mse']

@@ -38,7 +38,7 @@ def ccc_loss(y_true, y_pred):
     return (1 - c_value)/2
 
 
-def pearsonr(y_true,ypred):
+def pearsonr(y_true,y_pred):
     x = y_true
     y = y_pred
     mx = K.mean(x)
@@ -107,7 +107,7 @@ def CreateConv2DRegressor(shape, output_neurons,learning_rate, optimizer,kernel,
 
     return model
 
-def trainRegressor(model,x,y,epochs,batches,verb=1,calls):
+def trainRegressor(model,x,y,epochs,batches,verb,calls):
     history = model.fit(x, y, batch_size = batches, epochs = epochs, verbose=verb,callbacks=calls)
     return model, history
 
