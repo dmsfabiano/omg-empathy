@@ -6,6 +6,8 @@ from keras.layers import Dense, Dropout
 from keras.optimizers import RMSprop, adam,adamax, Nadam
 from sklearn.preprocessing import StandardScaler
 from keras import backend as K
+from keras import callbacks
+
 
 
 def ccc(y_true, y_pred):
@@ -64,8 +66,8 @@ def CreateRegressor(input_neurons, output_neurons,hidden_layers,learning_rate, o
             
     return model
 
-def trainRegressor(model,x,y,epochs,batches,verb=1):
-    model.fit(x, y, batch_size = batches, epochs = epochs, verbose=verb)
+def trainRegressor(model,x,y,epochs,batches,verb=1,calls):
+    model.fit(x, y, batch_size = batches, epochs = epochs, verbose=verb, callbacks=calls)
     return model
 
 def getDeepFeatures(featureDetector,x):
@@ -147,7 +149,8 @@ for opt in optimizers:
                 for outNeurons in output_neurons:
                     faceFeatureExtractor = CreateRegressor(input_neurons = len(train_fused_faces[0]), output_neurons=outNeurons,hidden_layers=hLayers,learning_rate=rate,
                                                            optimizer=opt,hidden_neurons=hNeurons)
-                    faceFeatureExtractor = trainRegressor(faceFeatureExtractor,train_fused_faces,y_train,epochs=100,batches=250)
+                    earlyStop = callbacks.EarlyStopping(monitor='loss',min_delta=0.01,patience=5)
+                    faceFeatureExtractor = trainRegressor(faceFeatureExtractor,train_fused_faces,y_train,epochs=100,batches=250,calls=[earlyStop])
                     
                     metric = faceFeatureExtractor.evaluate(validation_fused_faces,y_validation, verbose=1)
                     mse = metric[1]

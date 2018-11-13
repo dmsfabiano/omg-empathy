@@ -6,6 +6,7 @@ from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Flatten
 import operator
 from keras.optimizers import RMSprop, adam,adamax, Nadam
 from keras import backend as K
+from keras import callbacks
 
 
 def ccc(y_true, y_pred):
@@ -89,8 +90,8 @@ def CreateConv2DRegressor(shape, output_neurons,learning_rate, optimizer,kernel,
 
     return model
 
-def trainRegressor(model,x,y,epochs,batches,verb=1):
-    model.fit(x, y, batch_size = batches, epochs = epochs, verbose=verb)
+def trainRegressor(model,x,y,epochs,batches,verb=1,calls):
+    model.fit(x, y, batch_size = batches, epochs = epochs, verbose=verb,callbacks=calls)
     return model
 
 def getDeepFeatures(featureDetector,x):
@@ -142,11 +143,11 @@ for video in y_validation:
 y_validation = temp.copy()
 
 # DDNet Structure
-train_images = fp.read_landmark_images('../data/results/Training/')
-validation_images = fp.read_landmark_images('../data/results/Validation/')
+train_images = fp.read_landmark_images('../data/Images/Training/')
+validation_images = fp.read_landmark_images('../data/Images/Validation/')
 
-kernels = [3,5,7,9, 11]
-output_dim = [16,32,64]
+kernels = [3,5,7]
+output_dim = [16,32,64,128]
 dec = [True,False]
 optimizers = ['adam','RMSprop']
 rates = [0.01,0.001,0.0001,0.00001]
@@ -160,7 +161,8 @@ for ker in kernels:
                     for rate in rates:
                 
                         ConvReg = CreateConv2DRegressor(shape=(128,128,1), output_neurons=outNeurons,learning_rate=rate, optimizer=opt,kernel=ker,initial_dimention=out_dim, decreasing=mode)
-                        ConvReg = trainRegressor(ConvReg,np.asarray(train_images),y_train,epochs=100,batches=250)
+                        earlyStop = callbacks.EarlyStopping(monitor='loss',min_delta=0.01,patience=5)
+                        ConvReg = trainRegressor(ConvReg,np.asarray(train_images),y_train,epochs=100,batches=250,calls=[earlyStop])
 
                         metric = ConvReg.evaluate(np.asarray(validation_images),y_validation, verbose=1)
                         mse = metric[1]

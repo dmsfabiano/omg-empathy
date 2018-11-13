@@ -6,6 +6,7 @@ from keras.layers import Dense, Dropout
 from keras.optimizers import RMSprop, adam,adamax, Nadam
 from sklearn.preprocessing import StandardScaler
 from keras import backend as K
+from keras import callbacks
 
 def ccc(y_true, y_pred):
     # covariance between y_true and y_pred
@@ -63,8 +64,8 @@ def CreateRegressor(input_neurons, output_neurons,hidden_layers,learning_rate, o
             
     return model
 
-def trainRegressor(model,x,y,epochs,batches,verb=1):
-    model.fit(x, y, batch_size = batches, epochs = epochs, verbose=verb)
+def trainRegressor(model,x,y,epochs,batches,verb=1,calls):
+    model.fit(x, y, batch_size = batches, epochs = epochs, verbose=verb,callbacks=calls)
     return model
 
 def getDeepFeatures(featureDetector,x):
@@ -124,20 +125,23 @@ hidden_layers = [0,1,2,5,10]
 hidden_neurons = [int((136+1)/2),136*2]
 output_neurons = [10,100,1000]
 
-
+accuracies = []
 for opt in optimizers:
     for rate in rates:
         for hLayers in hidden_layers:
             for hNeurons in hidden_neurons:
+                outN_accuracies = []
                 for outNeurons in output_neurons:
                     audioFeatureExtractor = CreateRegressor(input_neurons = len(train_audio[0]), output_neurons=outNeurons,hidden_layers=hLayers,learning_rate=rate,
                                                             optimizer=opt,hidden_neurons=hNeurons)
-                    audioFeatureExtractor = trainRegressor(audioFeatureExtractor,np.asarray(train_audio),y_train,epochs=100,batches= 250)
+                    earlyStop = callbacks.EarlyStopping(monitor='loss',min_delta=0.01,patience=5)
+                    audioFeatureExtractor = trainRegressor(audioFeatureExtractor,np.asarray(train_audio),y_train,epochs=100,batches= 250,calls=[earlyStop])
                     
                     metric = audioFeatureExtractor.evaluate(np.asarray(validation_audio),y_validation, verbose=1)
                     mse = metric[1]
                     accuracy = metric[2] * 100
                     CCC = metric[3]
                     
+                    outN_accuracies.append(accuracy)
                     print('Audio statistics: {0} mse, {1}% accuracy, and {2} ccc \n with parameters: {3} optimizer, rate: {4}, {5} hlayers, {6} hneurons, {7} dim neurons'.format(
                             mse,accuracy,CCC,opt,rate,hLayers,hNeurons,outNeurons))
