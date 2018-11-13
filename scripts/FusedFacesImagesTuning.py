@@ -15,12 +15,12 @@ def ccc(y_true, y_pred):
     mx = K.mean(x)
     my = K.mean(y)
     xm, ym = x-mx, y-my
+    
     r_num = K.sum(tf.multiply(xm,ym))
     r_den = K.sqrt(tf.multiply(K.sum(K.square(xm)), K.sum(K.square(ym))))
     r = r_num / r_den
 
-    r = K.maximum(K.minimum(r, 1.0), -1.0)
-    rho = 1 - K.square(r)
+    rho = K.maximum(K.minimum(r, 1.0), -1.0)
 
     numerator = tf.multiply(tf.multiply(tf.scalar_mul(2,rho),K.std(x)),K.std(y))
     
@@ -29,7 +29,14 @@ def ccc(y_true, y_pred):
     std_true_squared = K.square(K.std(x))
     
     denominator = tf.add(tf.add(std_predictions_squared,std_true_squared),mean_differences)
+    
     return numerator/denominator
+
+
+def ccc_loss(y_true, y_pred):
+    c_value = ccc(y_true,y_pred)  
+    return (1 - c_value)/2
+
 
 def pearsonr(y_true,ypred):
     x = y_true
@@ -66,7 +73,7 @@ def CreateRegressor(input_neurons, output_neurons,hidden_layers,learning_rate, o
     model.add(Dense(units = output_neurons, kernel_initializer = 'uniform',activation = 'relu'))
     model.add(Dense(1,activation='linear'))
 
-    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = 'mean_squared_error', metrics = ['accuracy'])
+    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = ccc_loss, metrics = ['mse','accuracy',ccc, 'mae', pearsonr])
             
     return model
 
@@ -88,7 +95,7 @@ def CreateConv2DRegressor(shape, output_neurons,learning_rate, optimizer,kernel,
     model.add(Dropout(0.2))
     model.add(BatchNormalization())
     next_dimention = func(next_dimention,2)
-    model.add(Conv2D(next_dimention, kernel, activation='relu'))
+    model.add(Conv2D(next_dimention, kernel_size=kernel, activation='relu'))
     model.add(MaxPooling2D(pool_size=(2,2), padding='same'))
     model.add(BatchNormalization())
     model.add(Dropout(0.25))
@@ -96,13 +103,13 @@ def CreateConv2DRegressor(shape, output_neurons,learning_rate, optimizer,kernel,
     model.add(Dense(output_neurons, activation='relu'))
     model.add(Dropout(0.5))
     model.add(Dense(1,activation='linear'))
-    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = 'mean_squared_error', metrics =  ['mse','accuracy',ccc, 'mae'])
+    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = ccc_loss, metrics =  ['mse','accuracy',ccc, 'mae'])
 
     return model
 
 def trainRegressor(model,x,y,epochs,batches,verb=1,calls):
-    model.fit(x, y, batch_size = batches, epochs = epochs, verbose=verb,callbacks=calls)
-    return model
+    history = model.fit(x, y, batch_size = batches, epochs = epochs, verbose=verb,callbacks=calls)
+    return model, history
 
 def getDeepFeatures(featureDetector,x):
     getLastLayer = K.function([featureDetector.layers[0].input], [featureDetector.layers[-2].output])
@@ -156,34 +163,36 @@ y_validation = temp.copy()
 train_images = fp.read_landmark_images('../data/Images/Training/')
 validation_images = fp.read_landmark_images('../data/Images/Validation/')
 
-kernels = [3,5,7]
 output_dim = [16,32,64,128]
 dec = [True,False]
-optimizers = ['adam','RMSprop']
-rates = [0.01,0.001,0.0001,0.00001]
-output_neurons = [10,100,1000]
+output_neurons = [10,100,1000,2500,5000,10000]
 
-for ker in kernels:
-    for out_dim in output_dim:
-        for mode in dec:
-            for outNeurons in output_neurons:
-                for opt in optimizers:
-                    for rate in rates:
+for out_dim in output_dim:
+    for mode in dec:
+        for outNeurons in output_neurons:
+            
+            ConvReg = CreateConv2DRegressor(shape=(128,128,1), output_neurons=outNeurons,learning_rate=0.1, optimizer='adam',kernel=3,initial_dimention=out_dim, decreasing=mode)
+            reduceLR = callbacks.ReduceLROnPlateau(monitor=ccc_loss,factor=0.2,patience=10,verbose=1,mode='min')
+            
+            ConvReg,history = trainRegressor(ConvReg,np.asarray(train_images),y_train,epochs=250,batches= 250,calls=[reduceLR], verb=2)
+
+            loss_values = history.history['loss']
+            mse_values = history.history['mse']
+            acc_values = history.history['accuracy']
+            
+            print('Average ccc: {0} +/- {1}, mse: {2} +/- {3}, accuracy: {4} +/- {5}'.format(np.mean(loss_values),np.std(loss_values),np.mean(mse_values),np.std(mse_values)),
+                  np.mean(acc_values),np.std(acc_values))
+
+            metric = ConvReg.evaluate(np.asarray(validation_images),y_validation, verbose=0)
+            mse = metric[1]
+            accuracy = metric[2] * 100
+            CCC = metric[3]
+            mae = metric[4]
+            r = metric[5]
+        
+            dim_reduct = 'increasing'
+            if mode:
+                dim_reduct = 'decreasing'
                 
-                        ConvReg = CreateConv2DRegressor(shape=(128,128,1), output_neurons=outNeurons,learning_rate=rate, optimizer=opt,kernel=ker,initial_dimention=out_dim, decreasing=mode)
-                        earlyStop = callbacks.EarlyStopping(monitor='loss',min_delta=0.01,patience=5)
-                        ConvReg = trainRegressor(ConvReg,np.asarray(train_images),y_train,epochs=100,batches=250,calls=[earlyStop])
-
-                        metric = ConvReg.evaluate(np.asarray(validation_images),y_validation, verbose=1)
-                        mse = metric[1]
-                        accuracy = metric[2] * 100
-                        CCC = metric[3]
-                        mae = metric[4]
-                        r = metric[5]
-                    
-                        dim_reduct = 'increasing'
-                        if mode:
-                            dim_reduct = 'decreasing'
-                            
-                        print('Faces images statistics: {0} mse, {1}% accuracy, and {2} ccc \n with parameters: {3} optimizer, rate: {4}, {5} kernel size, {6} output dimentions, {7} dim neurons, and mode: {8}, MAE: {9}, R:{10}'.format(
-                                mse,accuracy,CCC,opt,rate,ker,out_dim,outNeurons,dim_reduct,mae,r))
+            print('Faces images statistics on testing: {0} mse, {1}% accuracy, and {2} ccc \n with parameters: {3} optimizer, rate: {4}, {5} kernel size, {6} output dimentions, {7} dim neurons, and mode: {8}, MAE: {9}, R:{10}'.format(
+                    mse,accuracy,CCC,opt,rate,ker,out_dim,outNeurons,dim_reduct,mae,r))
