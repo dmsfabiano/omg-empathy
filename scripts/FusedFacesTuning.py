@@ -66,7 +66,7 @@ def CreateRegressor(input_neurons, output_neurons,hidden_layers,learning_rate, o
             
     return model
 
-def trainRegressor(model,x,y,epochs,batches,verb=1,calls):
+def trainRegressor(model,x,y,epochs,batches,verb,calls):
     model.fit(x, y, batch_size = batches, epochs = epochs, verbose=verb, callbacks=calls)
     return model
 
@@ -150,7 +150,7 @@ for opt in optimizers:
                     faceFeatureExtractor = CreateRegressor(input_neurons = len(train_fused_faces[0]), output_neurons=outNeurons,hidden_layers=hLayers,learning_rate=rate,
                                                            optimizer=opt,hidden_neurons=hNeurons)
                     earlyStop = callbacks.EarlyStopping(monitor='loss',min_delta=0.01,patience=5)
-                    faceFeatureExtractor = trainRegressor(faceFeatureExtractor,train_fused_faces,y_train,epochs=100,batches=250,calls=[earlyStop])
+                    faceFeatureExtractor = trainRegressor(faceFeatureExtractor,train_fused_faces,y_train,epochs=100,batches=250,calls=[earlyStop],verb=1)
                     
                     metric = faceFeatureExtractor.evaluate(validation_fused_faces,y_validation, verbose=1)
                     mse = metric[1]
@@ -159,4 +159,3 @@ for opt in optimizers:
                     
                     print('Fused Faces statistics: {0} mse, {1}% accuracy, and {2} ccc \n with parameters: {3} optimizer, rate: {4}, {5} hlayers, {6} hneurons, {7} dim neurons'.format(
                             mse,accuracy,CCC,opt,rate,hLayers,hNeurons,outNeurons))
-

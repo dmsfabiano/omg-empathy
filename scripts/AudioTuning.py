@@ -64,7 +64,7 @@ def CreateRegressor(input_neurons, output_neurons,hidden_layers,learning_rate, o
             
     return model
 
-def trainRegressor(model,x,y,epochs,batches,verb=1,calls):
+def trainRegressor(model,x,y,epochs,batches,verb,calls):
     model.fit(x, y, batch_size = batches, epochs = epochs, verbose=verb,callbacks=calls)
     return model
 
@@ -135,7 +135,7 @@ for opt in optimizers:
                     audioFeatureExtractor = CreateRegressor(input_neurons = len(train_audio[0]), output_neurons=outNeurons,hidden_layers=hLayers,learning_rate=rate,
                                                             optimizer=opt,hidden_neurons=hNeurons)
                     earlyStop = callbacks.EarlyStopping(monitor='loss',min_delta=0.01,patience=5)
-                    audioFeatureExtractor = trainRegressor(audioFeatureExtractor,np.asarray(train_audio),y_train,epochs=100,batches= 250,calls=[earlyStop])
+                    audioFeatureExtractor = trainRegressor(audioFeatureExtractor,np.asarray(train_audio),y_train,epochs=100,batches= 250,calls=[earlyStop],verb=1)
                     
                     metric = audioFeatureExtractor.evaluate(np.asarray(validation_audio),y_validation, verbose=1)
                     mse = metric[1]

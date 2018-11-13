@@ -8,7 +8,7 @@ from keras.optimizers import RMSprop, adam,adamax, Nadam
 from sklearn.preprocessing import StandardScaler
 from keras import backend as K
 import matplotlib.pyplot as plt
-from multiprocessing import Pool
+from multiprocessing import Pool,Lock
 from cv2 import imwrite, resize
 
 def fusion(data_container):
@@ -64,13 +64,7 @@ for i in range(0,len(validation_landmarks_subject)):
     validation_fused_faces.append(fusion([validation_landmarks_subject[i],validation_landmarks_actor[i]]))
 validation_fused_faces = np.asarray(validation_fused_faces)
 
-global j
-global flag
-
-j = 0
-flag = False
-
-def writeImages(landmarks):
+def writeImages(landmarks,j,flag):
 	xlm,ylm = [],[]
 	for i in range(0,len(landmarks),2):
 		xlm.append(int(landmarks[i]))
@@ -81,12 +75,9 @@ def writeImages(landmarks):
 	matrix = np.zeros((width+1, height+1, 1), dtype = "uint8")
 	for value in range(len(xlm)):
 		matrix[xlm[value]][ylm[value]] = 255
-	imwrite('../data/Images/Training/frame_'+str(j)+'_.png' if not flag else '../data/Images/Validation/frame_'+str(j)+'_.png', resize(matrix,128,128))
-	j += 1
+	imwrite('../data/Images/Training/frame_'+str(j)+'_.png' if flag == False else '../data/Images/Validation/frame_'+str(j)+'_.png', resize(matrix,(128,128)))
 
-pool = Pool()
-pool.map(writeImages,train_fused_faces)
-
-j = 0
-flag = True
-pool.map(writeImages,validation_fused_faces)
+for j,face in enumerate(train_fused_faces):
+	writeImages(face,j,False)
+for j,face in enumerate(validation_fused_faces):
+	writeImages(face,j,True)

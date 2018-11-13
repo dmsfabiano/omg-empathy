@@ -90,7 +90,7 @@ def CreateConv2DRegressor(shape, output_neurons,learning_rate, optimizer,kernel,
 
     return model
 
-def trainRegressor(model,x,y,epochs,batches,verb=1,calls):
+def trainRegressor(model,x,y,epochs,batches,verb,calls):
     model.fit(x, y, batch_size = batches, epochs = epochs, verbose=verb,callbacks=calls)
     return model
 
@@ -162,7 +162,7 @@ for ker in kernels:
                 
                         ConvReg = CreateConv2DRegressor(shape=(128,128,1), output_neurons=outNeurons,learning_rate=rate, optimizer=opt,kernel=ker,initial_dimention=out_dim, decreasing=mode)
                         earlyStop = callbacks.EarlyStopping(monitor='loss',min_delta=0.01,patience=5)
-                        ConvReg = trainRegressor(ConvReg,np.asarray(train_images),y_train,epochs=100,batches=250,calls=[earlyStop])
+                        ConvReg = trainRegressor(ConvReg,np.asarray(train_images),y_train,epochs=100,batches=250,calls=[earlyStop],verb=1)
 
                         metric = ConvReg.evaluate(np.asarray(validation_images),y_validation, verbose=1)
                         mse = metric[1]
