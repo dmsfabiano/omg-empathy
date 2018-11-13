@@ -7,6 +7,7 @@ from keras.optimizers import RMSprop, adam,adamax, Nadam
 from sklearn.preprocessing import StandardScaler
 from keras import backend as K
 from keras import callbacks
+import tensorflow as tf
 
 def ccc(y_true, y_pred):
     x = y_true
@@ -137,6 +138,5 @@ for opt in optimizers:
                     accuracy = metric[2] * 100
                     CCC = metric[3]
                     
-                    outN_accuracies.append(accuracy)
                     print('Audio statistics: {0} mse, {1}% accuracy, and {2} ccc \n with parameters: {3} optimizer, rate: {4}, {5} hlayers, {6} hneurons, {7} dim neurons'.format(
                             mse,accuracy,CCC,opt,rate,hLayers,hNeurons,outNeurons))

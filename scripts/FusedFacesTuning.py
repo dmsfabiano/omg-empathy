@@ -7,8 +7,7 @@ from keras.optimizers import RMSprop, adam,adamax, Nadam
 from sklearn.preprocessing import StandardScaler
 from keras import backend as K
 from keras import callbacks
-
-
+import tensorflow as tf
 
 def ccc(y_true, y_pred):
     x = y_true
