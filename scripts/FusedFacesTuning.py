@@ -4,11 +4,9 @@ from sklearn.preprocessing import MinMaxScaler
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
 from keras.optimizers import RMSprop, adam,adamax, Nadam
-from keras import metrics
 from sklearn.preprocessing import StandardScaler
 from keras import backend as K
-import tensorflow as tf
-from scipy.stats import pearsonr
+
 
 def ccc(y_true, y_pred):
     # covariance between y_true and y_pred
