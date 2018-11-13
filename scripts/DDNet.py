@@ -89,12 +89,7 @@ for video in x_validation:
 		validation_audio.append(np.asarray(frame[272:5272]))
 
 scaler = StandardScaler()
-train_landmarks_subject = scaler.fit_transform(train_landmarks_subject)
-train_landmarks_actor = scaler.fit_transform(train_landmarks_actor)
 train_audio = scaler.fit_transform(train_audio)
-
-validation_landmarks_subject = scaler.fit_transform(validation_landmarks_subject)
-validation_landmarks_actor = scaler.fit_transform(validation_landmarks_actor)
 validation_audio = scaler.fit_transform(validation_audio)
 
 temp = []
@@ -119,6 +114,9 @@ train_fused_faces = np.asarray(train_fused_faces)
 for i in range(0,len(validation_landmarks_subject)):
     validation_fused_faces.append(fusion([validation_landmarks_subject[i],validation_landmarks_actor[i]]))
 validation_fused_faces = np.asarray(validation_fused_faces)
+
+train_fused_faces = scaler.fit_transform(train_fused_faces)
+validation_fused_faces = scaler.fit_transform(validation_fused_faces)
 
 # 2 Create and Train Face Feature Extractor (NEEDS TUNING ~ HARDCODED HYPERPARAMETERS)
 faceFeatureExtractor = CreateRegressor(input_neurons = len(train_fused_faces[0]), output_neurons=100,hidden_layers=2,learning_rate=0.1, optimizer='adam',hidden_neurons=int((136+1)/2))
@@ -153,12 +151,12 @@ validation_audioFeatures = np.asarray(validation_audioFeatures)
 train_fused_deep_features, validation_fused_deep_features = [], []
 
 # 5.1 training
-for i in range(0,len(train_faceFeatures)):
+for i in range(0,len(train_faceFeatures[0])):
     train_fused_deep_features.append(fusion([train_faceFeatures[0][i],train_audioFeatures[0][i]]))
 train_fused_deep_features = np.asarray(train_fused_deep_features)
 
 # 5.2 validation
-for i in range(0,len(validation_faceFeatures)):
+for i in range(0,len(validation_faceFeatures[0])):
     validation_fused_deep_features.append(fusion([validation_faceFeatures[0][i],validation_audioFeatures[0][i]]))
 validation_fused_deep_features = np.asarray(validation_fused_deep_features)
 

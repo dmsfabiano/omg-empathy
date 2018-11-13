@@ -1,3 +1,4 @@
+from PIL import Image
 import file_operations as fp
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
@@ -68,7 +69,11 @@ for j,landmarks in enumerate(train_fused_faces):
 		ylm.append(landmarks[i+1])
 	plt.scatter(xlm,ylm)
 	plt.gca().invert_yaxis()
-	plt.savefig('../data/Images/Training/frame_'+str(j)+'_point'+str(i)+'.png')
+	plt.axis('off')
+	plt.savefig('../data/Images/Training/frame_'+str(j)+'_point'+str(i)+'.png', bbox_inches='tight')
+	Image.open('../data/Images/Training/frame_'+str(j)+'_point'+str(i)+'.png').convert('L').save('../data/Images/Training/frame_'+str(j)+'_point'+str(i)+'.png')
+	plt.clf()
+
 
 for j,landmarks in enumerate(validation_fused_faces):
 	xlm,ylm = [],[]
@@ -77,4 +82,7 @@ for j,landmarks in enumerate(validation_fused_faces):
 		ylm.append(landmarks[i+1])
 	plt.scatter(xlm,ylm)
 	plt.gca().invert_yaxis()
-	plt.savefig('../data/Images/Validation/frame_'+str(j)+'_point'+str(i)+'.png')
+	plt.axis('off')
+	plt.savefig('../data/Images/Validation/frame_'+str(j)+'_point'+str(i)+'.png', bbox_inches='tight')
+	Image.open('../data/Images/Training/frame_'+str(j)+'_point'+str(i)+'.png').convert('L').save('../data/Images/Training/frame_'+str(j)+'_point'+str(i)+'.png')
+	plt.clf()
