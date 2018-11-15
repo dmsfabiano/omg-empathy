@@ -149,8 +149,8 @@ y_test = temp.copy()
 train_images = fp.read_landmark_images('../data/Images/Training/')
 test_images = fp.read_landmark_images('../data/Images/Validation/')
 
-train_images = np.reshape(train_images, (train_images.shape[0],128,128,3))
-test_images = np.reshape(validation_images, (validation_images.shape[0],128,128,3))
+train_images = np.reshape(train_images, (train_images.shape[0],128,128,1))
+test_images = np.reshape(validation_images, (validation_images.shape[0],128,128,1))
 
 train_images,x_validation,y_train,y_validation = train_test_split(train_images,y_train,test_size=0.2,random_state=1)
 
@@ -162,7 +162,7 @@ for out_dim in output_dim:
     for mode in dec:
         for outNeurons in output_neurons:
             
-            ConvReg = CreateConv2DRegressor(shape=(128,128,3), output_neurons=outNeurons,learning_rate=0.00001, optimizer='adam',kernel=3,initial_dimention=out_dim, decreasing=mode)
+            ConvReg = CreateConv2DRegressor(shape=(128,128,1), output_neurons=outNeurons,learning_rate=0.00001, optimizer='adam',kernel=3,initial_dimention=out_dim, decreasing=mode)
 
             reduceLR = callbacks.ReduceLROnPlateau(monitor='val_loss',factor=0.2,patience=5,verbose=1,mode='min',min_lr=0.0000001,min_delta=0.001)
             earlyStop = callbacks.EarlyStopping(monitor='val_loss',min_delta=0.001,patience=10)
