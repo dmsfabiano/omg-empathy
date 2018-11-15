@@ -30,6 +30,9 @@ def ccc(y_true, y_pred):
     
     denominator = tf.add(tf.add(std_predictions_squared,std_true_squared),mean_differences)
     
+    print(numerator)
+    print(denominator)
+
     return numerator/denominator
 
 
@@ -78,20 +81,23 @@ def CreateRegressor(input_neurons, output_neurons,hidden_layers,learning_rate, o
     
     model = Sequential()
     model.add(Dense(units = hidden_neurons, kernel_initializer = 'uniform',activation = 'relu', input_dim = input_neurons))
-    
+
+    ''' 
     for i in range(0,hidden_layers):
         model.add(Dense(units = hidden_neurons, kernel_initializer = 'uniform',activation = 'relu'))
         if i % 2 == 1:
-            model.add(Dropout(0.3))
+            model.add(Dropout(0.25))
+    '''
+
     model.add(Dense(units = output_neurons, kernel_initializer = 'uniform',activation = 'relu'))
     model.add(Dense(1,activation='linear'))
 
-    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = ccc_loss , metrics =  ['mse','accuracy',ccc, 'mae', pearsonr])
+    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss=ccc_loss , metrics =  ['mse',ccc, 'mae', pearsonr,ccc_loss])
             
     return model
 
 def trainRegressor(model,x,y,epochs,batches,verb,calls):
-    history = model.fit(x, y, batch_size = batches, epochs = epochs, verbose=verb,callbacks=calls)
+    history = model.fit(x, y, batch_size = batches, epochs = epochs, verbose=verb,callbacks=calls,validation_split=0.2,)
     return model, history
 
 def getDeepFeatures(featureDetector,x):
@@ -129,44 +135,40 @@ for video in x_validation:
 		validation_audio.append(np.asarray(frame[272:5272]))
 
 scaler = StandardScaler()
-train_audio = scaler.fit_transform(train_audio)
+train_audio = scaler.fit_transform(np.asarray(train_audio))
+validation_audio = scaler.fit_transform(np.asarray(validation_audio))
 
-validation_audio = scaler.fit_transform(validation_audio)
-
-temp = []
+y_train_temp = []
 for video in y_train:
-	temp.extend(video)
-y_train = temp.copy()
+	y_train_temp.extend(video)
+y_train = np.asarray(y_train_temp)
 
-temp = []
+y_validation_temp = []
 for video in y_validation:
-	temp.extend(video)
-y_validation = temp.copy()
+	y_validation_temp.extend(video)
+y_validation = np.asarray(y_validation_temp)
 
 # DDNet Structure
 output_neurons = [10,100,1000,2500,5000,10000]
 
 for outNeurons in output_neurons:
-    audioFeatureExtractor = CreateRegressor(input_neurons = len(train_audio[0]), output_neurons=outNeurons,hidden_layers=5,learning_rate=0.1,
-                                            optimizer='adam',hidden_neurons=int((len(train_audio) + 1)/2))
+    audioFeatureExtractor = CreateRegressor(input_neurons = len(train_audio[0]), output_neurons=outNeurons,hidden_layers=5,learning_rate=0.00001,
+                                            optimizer='adam',hidden_neurons=int((len(train_audio[0]) + 1)/2))
                                             
-    reduceLR = callbacks.ReduceLROnPlateau(monitor=ccc_loss,factor=0.5,patience=10,verbose=1,mode='auto',min_lr=0.000001,min_delta=0.001)
-    
-    audioFeatureExtractor,history = trainRegressor(audioFeatureExtractor,np.asarray(train_audio),y_train,epochs=100,batches= 250,calls=[reduceLR], verb=2)
+    reduceLR = callbacks.ReduceLROnPlateau(monitor='val_loss',factor=0.2,patience=10,verbose=1,mode='min',min_lr=0.0000001,min_delta=0.001)
+    earlyStop = callbacks.EarlyStopping(monitor='val_loss',patience=10)
+    audioFeatureExtractor,history = trainRegressor(audioFeatureExtractor,train_audio,y_train,epochs=250,batches=(int(len(train_audio)*0.8))//32,calls=[reduceLR,earlyStop], verb=2)
     
     loss_values = history.history['loss']
-    mse_values = history.history['mse']
-    acc_values = history.history['accuracy']
+    ccc_values = history.history['ccc']
     
-    print('Average ccc: {0} +/- {1}, mse: {2} +/- {3}, accuracy: {4} +/- {5}'.format(np.mean(loss_values),np.std(loss_values),np.mean(mse_values),np.std(mse_values)),
-          np.mean(acc_values),np.std(acc_values))
-    
-    metric = audioFeatureExtractor.evaluate(np.asarray(validation_audio),y_validation, verbose=0)
+    print('Average loss: {0} +/- {1}, CCC: {2} +/- {3}'.format(np.mean(loss_values),np.std(loss_values),np.mean(ccc_values),np.std(ccc_values)))
+ 
+    metric = audioFeatureExtractor.evaluate(validation_audio,y_validation, verbose=0)
     mse = metric[1]
-    accuracy = metric[2] * 100
-    CCC = metric[3]
-    mae = metric[4]
-    r = metric[5]
+    CCC = metric[2]
+    mae = metric[3]
+    r = metric[4]
     
-    print('Audio statistics on testing: {0} ccc, {1} mse, {2} mae, {3} accuracy\n with parameters: {4} output dimension neurons '.format(
-            CCC,mse,mae,accuracy,outNeurons))
+    print('Audio statistics on testing: {0} ccc, {1} mse, {2} mae\n with parameters: {3} output dimension neurons '.format(
+            CCC,mse,mae,outNeurons))

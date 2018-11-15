@@ -86,12 +86,12 @@ def CreateRegressor(input_neurons, output_neurons,hidden_layers,learning_rate, o
     model.add(Dense(units = output_neurons, kernel_initializer = 'uniform',activation = 'relu'))
     model.add(Dense(1,activation='linear'))
 
-    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = ccc_loss, metrics = ['mse','accuracy',ccc,'mae',pearsonr])
+    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = 'mse', metrics = ['mse',ccc,'mae',pearsonr,ccc_loss])
             
     return model
 
 def trainRegressor(model,x,y,epochs,batches,verb,calls):
-    history = model.fit(x, y, batch_size = batches, epochs = epochs, verbose=verb, callbacks=calls)
+    history = model.fit(x, y, batch_size = batches, epochs = epochs, verbose=verb, callbacks=calls, validation_split=0.2)
     return model,history
 
 def getDeepFeatures(featureDetector,x):
@@ -168,24 +168,20 @@ for outNeurons in output_neurons:
     faceFeatureExtractor = CreateRegressor(input_neurons = len(train_fused_faces[0]), output_neurons=outNeurons,hidden_layers=5,learning_rate=0.1,
                                            optimizer='adam',hidden_neurons=len(train_fused_faces[0]))
     
-    reduceLR = callbacks.ReduceLROnPlateau(monitor=ccc_loss,factor=0.5,patience=10,verbose=1,mode='auto',min_delta=0.001,min_lr=0.0000001)
-    
+    reduceLR = callbacks.ReduceLROnPlateau(monitor='val_loss',factor=0.5,patience=10,verbose=1,mode='min',min_delta=0.001,min_lr=0.0000001) 
     faceFeatureExtractor,history = trainRegressor(faceFeatureExtractor,train_fused_faces,y_train,epochs=100,batches= 250,calls=[reduceLR], verb=2)
     
     loss_values = history.history['loss']
-    mse_values = history.history['mse']
-    acc_values = history.history['accuracy']
+    ccc_values = history.history['ccc']
     
-    print('Average ccc: {0} +/- {1}, mse: {2} +/- {3}, accuracy: {4} +/- {5}'.format(np.mean(loss_values),np.std(loss_values),np.mean(mse_values),np.std(mse_values)),
-          np.mean(acc_values),np.std(acc_values))
+    print('Average loss: {0} +/- {1}, ccc: {2} +/- {3}'.format(np.mean(loss_values),np.std(loss_values),np.mean(ccc_values),np.std(ccc_values)))
     
     metric = faceFeatureExtractor.evaluate(validation_fused_faces,y_validation, verbose=0)
     mse = metric[1]
-    accuracy = metric[2] * 100
-    CCC = metric[3]
-    mae = metric[4]
-    r = metric[5]
+    CCC = metric[2]
+    mae = metric[3]
+    r = metric[4]
     
-    print('Fused Faces statistics on testing: {0} mse, {1}% accuracy, {2} ccc, {3} mae, {4} r \n with parameters: {5} optimizer, rate: {6}, {7} hlayers, {8} hneurons, {9} dim neurons '.format(
-            mse,accuracy,CCC,mae,r,opt,rate,hLayers,hNeurons,outNeurons))
+    print('Fused Faces statistics on testing: {0} mse, {1} ccc, {2} mae, {3} r \n with parameters: {4} dim neurons '.format(
+            mse,CCC,mae,r,outNeurons))
 

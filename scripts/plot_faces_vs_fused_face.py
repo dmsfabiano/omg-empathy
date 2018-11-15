@@ -74,7 +74,10 @@ def writeImages(landmarks,j,flag):
 	matrix = np.zeros((height+1, width+1, 1), dtype = "uint8")
 	for value in range(len(xlm)):
 		matrix[ylm[value]][xlm[value]] = 255
-	imwrite('../data/Images/Training/frame_'+str(j)+'_.png' if flag == False else '../data/Images/Validation/frame_'+str(j)+'_.png', resize(matrix,(256,256)))
+	indicies = np.where(matrix==255)
+	bbox = np.min(indicies[0]), np.max(indicies[0]), np.min(indicies[1]), np.max(indicies[1])
+	matrix = matrix[bbox[0]:bbox[1], bbox[2]:bbox[3]]
+	imwrite('../data/Images/Training/frame_'+str(j)+'_.png' if flag == False else '../data/Images/Validation/frame_'+str(j)+'_.png', resize(matrix,(128,128)))
 
 for j,face in enumerate(train_fused_faces):
 	writeImages(face,j,False)
