@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import cv2
 from scipy.io.wavfile import read
+from multiprocessing import Pool
 
 def read_images_together(images_dir= '../data/faces/Training/',
                 y_dir='../data/Training/Annotations/'):
@@ -75,13 +76,18 @@ def read_all_data(subject_list,story_list, data_directory = '../data/results/'):
        y_container[subject_list.index(subject)][story_list.index(story)] = data.iloc[:,-1].values
       
     return np.asarray(data_container),np.asarray(y_container)
+	
+def readImage(path):
+	return (cv2.imread(path[0],cv2.IMREAD_GRAYSCALE) / 255, path[1])
         
 def read_landmark_images(data_directory='../data/Images/'):
-	frameNumber = {}
+	file_list = []
 	for root, path, files in os.walk(data_directory):
 		for file in files:
 			if file.endswith('.png'):
 				frame = file.split('/')[-1].split('_')[1]
-				frameNumber[frame] = cv2.imread(os.path.join(root,file),cv2.IMREAD_GRAYSCALE) / 255
-	orderedByFrame = sorted(frameNumber.items(), key=lambda k: k[0])
-	return np.asarray([frame[1] for frame in orderedByFrame])
+				file_list.append((os.path.join(root,file),frame))
+	
+	with Pool() as p:
+		images = p.map(readImage, file_list)
+		return np.asarray([items[0] for items in sorted(images, key=lambda x: x[1])])

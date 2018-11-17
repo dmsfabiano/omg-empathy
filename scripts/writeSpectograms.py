@@ -11,7 +11,8 @@ import matplotlib.pyplot as plt
 from multiprocessing import Pool,Lock
 from cv2 import imwrite, resize
 from scipy import signal
-from skimage.draw import line
+import matplotlib.pyplot as plt
+from multiprocessing import Pool
 
 def fusion(data_container):
    
@@ -55,16 +56,11 @@ for video in x_validation:
 
 def writeImages(audio,j,flag):
 	f,t,Sxx = signal.spectrogram(audio,fs=125000,return_onesided=False)
-	print(f.shape)
-	print(f)
-	print(t.shape)
-	print(t)
-	print(Sxx.shape)
-	print(Sxx)
-	print()
-	imwrite('../data/Spectograms/Training/frame_'+str(j)+'_.png' if flag == False else '../data/Spectograms/Validation/frame_'+str(j)+'_.png', Sxx)
+	fig = plt.pcolormesh(t,f,Sxx).get_figure()
+	fig.set_size_inches(3.2,3.2)
+	fig.savefig('../data/Spectograms/Training/frame_'+str(j)+'_.png' if flag == False else '../data/Spectograms/Validation/frame_'+str(j)+'_.png',bbox_inches='tight')
 
-for j,audio in enumerate(train_audio):
-	writeImages(audio,j,False)
-for j,audio in enumerate(validation_audio):
-	writeImages(audio,j,True)
+plt.axis('off')
+with Pool() as p:
+	p.starmap(writeImages, zip(train_audio,range(0,len(train_audio)),[False for i in range(0,len(train_audio))]))
+	p.starmap(writeImages, zip(validation_audio,range(0,len(validation_audio)),[True for i in range(0,len(validation_audio))]))

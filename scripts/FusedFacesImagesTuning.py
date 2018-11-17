@@ -9,6 +9,7 @@ from keras.optimizers import RMSprop, adam,adamax, Nadam
 from keras import backend as K
 from keras import callbacks
 import tensorflow as tf
+from sklearn.utils import shuffle
 
 def ccc(y_true, y_pred):
     x = y_true
@@ -147,16 +148,21 @@ y_test = temp.copy()
 
 # DDNet Structure
 train_images = fp.read_landmark_images('../data/Images/Training/')
+print('Train Images Loaded!')
 test_images = fp.read_landmark_images('../data/Images/Validation/')
+print('Test Images Loaded!')
 
 train_images = np.reshape(train_images, (train_images.shape[0],128,128,1))
-test_images = np.reshape(validation_images, (validation_images.shape[0],128,128,1))
+test_images = np.reshape(test_images, (test_images.shape[0],128,128,1))
 
-train_images,x_validation,y_train,y_validation = train_test_split(train_images,y_train,test_size=0.2,random_state=1)
+train_images,x_validation,y_train,y_validation = train_test_split(train_images,y_train,test_size=0.2)
+test_images, y_test = shuffle(test_images,y_test)
 
 output_dim = [16,32,64,128]
 dec = [True,False]
 output_neurons = [10,100,1000,2500,5000,10000]
+
+print('Loading CNN!')
 
 for out_dim in output_dim:
     for mode in dec:
@@ -166,7 +172,7 @@ for out_dim in output_dim:
 
             reduceLR = callbacks.ReduceLROnPlateau(monitor='val_loss',factor=0.2,patience=5,verbose=1,mode='min',min_lr=0.0000001,min_delta=0.001)
             earlyStop = callbacks.EarlyStopping(monitor='val_loss',min_delta=0.001,patience=10)
-            ConvReg,history = trainRegressor(ConvReg,np.asarray(train_images),np.asarray(y_train),epochs=100,batches=250,calls=[reduceLR,earlyStop],verb=2,val_data=(np.asarray(x_validation),np.asarray(y_validation)))
+            ConvReg,history = trainRegressor(ConvReg,np.asarray(train_images),np.asarray(y_train),epochs=100,batches=25,calls=[reduceLR,earlyStop],verb=2,val_data=(np.asarray(x_validation),np.asarray(y_validation)))
 
             loss_values = history.history['loss']
             ccc_values = history.history['ccc']
