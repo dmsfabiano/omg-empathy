@@ -172,7 +172,7 @@ for out_dim in output_dim:
 
             reduceLR = callbacks.ReduceLROnPlateau(monitor='val_loss',factor=0.2,patience=5,verbose=1,mode='min',min_lr=0.0000001,min_delta=0.001)
             earlyStop = callbacks.EarlyStopping(monitor='val_loss',min_delta=0.001,patience=10)
-            ConvReg,history = trainRegressor(ConvReg,np.asarray(train_images),np.asarray(y_train),epochs=100,batches=25,calls=[reduceLR,earlyStop],verb=2,val_data=(np.asarray(x_validation),np.asarray(y_validation)))
+            ConvReg,history = trainRegressor(ConvReg,np.asarray(train_images),np.asarray(y_train),epochs=5,batches=25,calls=[reduceLR,earlyStop],verb=2,val_data=(np.asarray(x_validation),np.asarray(y_validation)))
 
             loss_values = history.history['loss']
             ccc_values = history.history['ccc']
