@@ -6,7 +6,6 @@ from keras import backend as K
 import tensorflow as tf
 
 import matplotlib as mpl
-mpl.use('PDF')
 import matplotlib.pyplot as plt
 
 
@@ -127,22 +126,33 @@ def getDeepFeatures(featureDetector,x):
 def RegressorPrediction(model,x):
     return model.predict(x)
 
-"""
-This function cretes a graph where the x axis is the epoch or training iteration, and 
-in the y axis we represent the metric speficied (by default, accuracy) of the model
-at that point in the training process on the training and validation dataset.
-
-Params:
+def graphTrainingData(history, imagePath='train_graph.png', metrics=['acc'], show = False):
+    """
+    This function cretes a graph where the x axis is the epoch or training iteration, and 
+    in the y axis we represent the metric speficied (by default, accuracy) of the model
+    at that point in the training process on the training and validation dataset.
+    
+    Params:
     history: training history object returned by Keras after training the model
     imagePath: path and name of the graph image to create
     metric: metric to graph or plot
-"""
-def graphTrainingData(history, imagePath='train_graph.png', metric='acc'):
+    """
     fig = plt.figure()
-    plt.plot(history.history[metric])
-    plt.plot(history.history['val_' + metric])
-    plt.title(metric + ' Training Graph')
-    plt.ylabel(metric)
-    plt.xlabel('epoch')
-    plt.legend(['train', 'validation'], loc = 'upper left')
-    plt.savefig(imagePath)
+    nrows = max(1, len(metrics)//3)
+    ncols = min(3, len(metrics))
+    print('Number of rows: ', nrows)
+    print('Number of cols: ', ncols)
+    for i in range(len(metrics)):
+        print('Plotting metric ' + metrics[i])
+        sbplt = fig.add_subplot(nrows, ncols, i+1)
+        sbplt.plot(history.history[metrics[i]])
+        sbplt.plot(history.history['val_' + metrics[i]])
+        sbplt.set_title(metrics[i] + ' Training Graph')
+        sbplt.set_ylabel(metrics[i])
+        sbplt.set_xlabel('epoch')
+    fig.legend(['train', 'validation'], loc = 'upper left')
+    if (show):
+        plt.show()
+    else:
+        mpl.use('PDF')
+        plt.savefig(imagePath)
