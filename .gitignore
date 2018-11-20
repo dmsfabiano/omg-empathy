@@ -30,3 +30,4 @@ data/Images/Validation/*
 /scripts/c++-scripts/Makefile
 data/audio-split/*
 data/audio/*
+!/scripts/c++-scripts/cpp-spectrogram-master
