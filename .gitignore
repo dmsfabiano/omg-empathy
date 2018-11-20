@@ -28,3 +28,5 @@ data/Images/Validation/*
 /scripts/c++-scripts/FaceDetector
 /scripts/c++-scripts/cmake_install.cmake
 /scripts/c++-scripts/Makefile
+data/audio-split/*
+data/audio/*
