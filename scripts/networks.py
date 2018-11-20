@@ -5,6 +5,10 @@ from keras.optimizers import RMSprop, adam,adamax, Nadam
 from keras import backend as K
 import tensorflow as tf
 
+import matplotlib as mpl
+mpl.use('PDF')
+import matplotlib.pyplot as plt
+
 
 def ccc(y_true, y_pred):
     x = y_true
@@ -122,3 +126,23 @@ def getDeepFeatures(featureDetector,x):
 
 def RegressorPrediction(model,x):
     return model.predict(x)
+
+"""
+This function cretes a graph where the x axis is the epoch or training iteration, and 
+in the y axis we represent the metric speficied (by default, accuracy) of the model
+at that point in the training process on the training and validation dataset.
+
+Params:
+    history: training history object returned by Keras after training the model
+    imagePath: path and name of the graph image to create
+    metric: metric to graph or plot
+"""
+def graphTrainingData(history, imagePath='train_graph.png', metric='acc'):
+    fig = plt.figure()
+    plt.plot(history.history[metric])
+    plt.plot(history.history['val_' + metric])
+    plt.title(metric + ' Training Graph')
+    plt.ylabel(metric)
+    plt.xlabel('epoch')
+    plt.legend(['train', 'validation'], loc = 'upper left')
+    plt.savefig(imagePath)
