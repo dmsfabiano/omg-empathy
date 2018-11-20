@@ -1,132 +1,10 @@
 import file_operations as fp
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.model_selection import train_test_split
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Flatten, BatchNormalization
-import operator
-from keras.optimizers import RMSprop, adam,adamax, Nadam
-from keras import backend as K
-from keras import callbacks
-import tensorflow as tf
+import networks as net
 from sklearn.utils import shuffle
+from sklearn.model_selection import train_test_split
+from keras import callbacks
 
-def ccc(y_true, y_pred):
-    x = y_true
-    y = y_pred
-    mx = K.mean(x)
-    my = K.mean(y)
-    xm, ym = x-mx, y-my
-    
-    r_num = K.sum(tf.multiply(xm,ym))
-    r_den = K.sqrt(tf.multiply(K.sum(K.square(xm)), K.sum(K.square(ym))))
-    r = r_num / r_den
-
-    rho = K.maximum(K.minimum(r, 1.0), -1.0)
-
-    numerator = tf.multiply(tf.multiply(tf.scalar_mul(2,rho),K.std(x)),K.std(y))
-    
-    mean_differences = K.square(my - mx)
-    std_predictions_squared = K.square(K.std(y))
-    std_true_squared = K.square(K.std(x))
-    
-    denominator = tf.add(tf.add(std_predictions_squared,std_true_squared),mean_differences)
-    
-    return numerator/denominator
-
-def focal_loss(y_true,y_pred,gamma=2, alpha=0.25):
-	eps = K.epsilon()
-    
-	y_pred=K.clip(y_pred,eps,1.- eps)
-    
-	pt_1 = tf.where(tf.equal(y_true, 1), y_pred, tf.ones_like(y_pred))
-	pt_0 = tf.where(tf.equal(y_true, 0), y_pred, tf.zeros_like(y_pred))
-	return -K.sum(alpha * K.pow(1. - pt_1, gamma) * K.log(pt_1))-K.sum((1-alpha) * K.pow( pt_0, gamma) * K.log(1. - pt_0))
-
-def ccc_loss(y_true, y_pred):
-    c_value = ccc(y_true,y_pred)  
-    return (1 - c_value)/2
-
-
-def pearsonr(y_true,y_pred):
-    x = y_true
-    y = y_pred
-    mx = K.mean(x)
-    my = K.mean(y)
-    xm, ym = x-mx, y-my
-    r_num = K.sum(tf.multiply(xm,ym))
-    r_den = K.sqrt(tf.multiply(K.sum(K.square(xm)), K.sum(K.square(ym))))
-    r = r_num / r_den
-
-    r = K.maximum(K.minimum(r, 1.0), -1.0)
-    return 1 - K.square(r)
-
-def getOptimizer(name,rate):
-    if name is 'adamax':
-        return adamax(lr=rate)
-    elif name is 'adam':
-        return adam(lr=rate)
-    elif name is 'nadam':
-        return Nadam(lr=rate)
-    else:
-        return RMSprop(lr=rate)
-
-def CreateRegressor(input_neurons, output_neurons,hidden_layers,learning_rate, optimizer,hidden_neurons):
-
-    
-    model = Sequential()
-    model.add(Dense(units = hidden_neurons, kernel_initializer = 'uniform',activation = 'relu', input_dim = input_neurons))
-    
-    for i in range(0,hidden_layers):
-        model.add(Dense(units = hidden_neurons, kernel_initializer = 'uniform',activation = 'relu'))
-
-    model.add(Dense(units = output_neurons, kernel_initializer = 'uniform',activation = 'relu'))
-    model.add(Dense(1,activation='linear'))
-
-    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = ccc_loss, metrics = ['mse','accuracy',ccc, 'mae', pearsonr,ccc_loss])
-            
-    return model
-
-
-def CreateConv2DRegressor(shape, output_neurons,learning_rate, optimizer,kernel,initial_dimention, decreasing):
-    
-    func = None
-    if decreasing:
-        func = operator.floordiv
-    else:
-        func = operator.mul
-        
-    model = Sequential()
-    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu',input_shape=shape))
-    model.add(BatchNormalization())
-    next_dimention = func(initial_dimention,2)
-    model.add(Conv2D(next_dimention, kernel_size=kernel,activation='relu'))
-    model.add(MaxPooling2D(pool_size=(2,2), padding='same'))
-    model.add(Dropout(0.2))
-    model.add(BatchNormalization())
-    next_dimention = func(next_dimention,2)
-    model.add(Conv2D(next_dimention, kernel_size=kernel, activation='relu'))
-    model.add(MaxPooling2D(pool_size=(2,2), padding='same'))
-    model.add(BatchNormalization())
-    model.add(Dropout(0.25))
-    model.add(Flatten())
-    model.add(Dense(output_neurons, activation='relu'))
-    model.add(Dropout(0.5))
-    model.add(Dense(1,activation='linear'))
-    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = ccc_loss, metrics =  ['mse','accuracy',ccc, 'mae',ccc_loss])
-
-    return model
-
-def trainRegressor(model,x,y,epochs,batches,verb,calls,val_data):
-    history = model.fit(x, y, batch_size = batches, epochs = epochs, verbose=verb, callbacks=calls,validation_data=val_data, shuffle=False)
-    return model, history
-
-def getDeepFeatures(featureDetector,x):
-    getLastLayer = K.function([featureDetector.layers[0].input], [featureDetector.layers[-2].output])
-    return getLastLayer([x])[0]
-
-def RegressorPrediction(model,x):
-    return model.predict(x)
             
 def getData(subject_list,story_list, directory):
     x_separated,y_separated = fp.read_all_data(subject_list,story_list, directory)
@@ -136,7 +14,7 @@ def getData(subject_list,story_list, directory):
     
     return x,y
 
-# Get data
+# --------------------------------------- DATA PRE-PROCESSING -----------------------------------------------------
 train_sbj_list = [1,2,3,4,5,6,7,8,9,10]
 train_story_list = [2,4,5,8]
 validation_story_list =  [1]
@@ -169,11 +47,14 @@ outNeurons = 100
 out_dim = 16
 mode = False # This increases or decreases the out_dim by */ 2 every lager
 
-ConvReg = CreateConv2DRegressor(shape=(128,128,1), output_neurons=outNeurons,learning_rate=0.00001, optimizer='adam',kernel=3,initial_dimention=out_dim, decreasing=mode)
+
+# ---------------------------------------- NETWORK -------------------------------------------------------
+
+ConvReg = net.CreateConv2DRegressor(shape=(128,128,1), output_neurons=outNeurons,learning_rate=0.00001, optimizer='adam',kernel=3,initial_dimention=out_dim, decreasing=mode)
 
 reduceLR = callbacks.ReduceLROnPlateau(monitor='val_loss',factor=0.2,patience=5,verbose=1,mode='min',min_lr=0.0000001,min_delta=0.001)
 earlyStop = callbacks.EarlyStopping(monitor='val_loss',min_delta=0.001,patience=10)
-ConvReg,history = trainRegressor(ConvReg,np.asarray(train_images),np.asarray(y_train),epochs=5,batches=25,calls=[reduceLR,earlyStop],verb=2,val_data=(np.asarray(x_validation),np.asarray(y_validation)))
+ConvReg,history = net.trainRegressor(ConvReg,np.asarray(train_images),np.asarray(y_train),epochs=5,batches=25,calls=[reduceLR,earlyStop],verb=2,val_data=(np.asarray(x_validation),np.asarray(y_validation)))
 
 loss_values = history.history['loss']
 ccc_values = history.history['ccc']

@@ -1,54 +1,10 @@
 import file_operations as fp
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
-from keras.models import Sequential
-from keras.layers import Dense, Dropout
-from keras.optimizers import RMSprop, adam,adamax, Nadam
-from sklearn.preprocessing import StandardScaler
-from keras import backend as K
+import networks as net
 from keras import callbacks
-import tensorflow as tf
-
-def ccc(y_true, y_pred):
-    x = y_true
-    y = y_pred
-    mx = K.mean(x)
-    my = K.mean(y)
-    xm, ym = x-mx, y-my
-    
-    r_num = K.sum(tf.multiply(xm,ym))
-    r_den = K.sqrt(tf.multiply(K.sum(K.square(xm)), K.sum(K.square(ym))))
-    r = r_num / r_den
-
-    rho = K.maximum(K.minimum(r, 1.0), -1.0)
-
-    numerator = tf.multiply(tf.multiply(tf.scalar_mul(2,rho),K.std(x)),K.std(y))
-    
-    mean_differences = K.square(my - mx)
-    std_predictions_squared = K.square(K.std(y))
-    std_true_squared = K.square(K.std(x))
-    
-    denominator = tf.add(tf.add(std_predictions_squared,std_true_squared),mean_differences)
-    
-    return numerator/denominator
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 
-def ccc_loss(y_true, y_pred):
-    c_value = ccc(y_true,y_pred)  
-    return (1 - c_value)/2
-
-def pearsonr(y_true,y_pred):
-    x = y_true
-    y = y_pred
-    mx = K.mean(x)
-    my = K.mean(y)
-    xm, ym = x-mx, y-my
-    r_num = K.sum(tf.multiply(xm,ym))
-    r_den = K.sqrt(tf.multiply(K.sum(K.square(xm)), K.sum(K.square(ym))))
-    r = r_num / r_den
-
-    r = K.maximum(K.minimum(r, 1.0), -1.0)
-    return 1 - K.square(r)
 
 def fusion(data_container):
    
@@ -63,44 +19,6 @@ def fusion(data_container):
         weighted_container = np.add(weighted_container,signal)
     return weighted_container
 
-def getOptimizer(name,rate):
-    if name is 'adamax':
-        return adamax(lr=rate)
-    elif name is 'adam':
-        return adam(lr=rate)
-    elif name is 'nadam':
-        return Nadam(lr=rate)
-    else:
-        return RMSprop(lr=rate)
-
-def CreateRegressor(input_neurons, output_neurons,hidden_layers,learning_rate, optimizer,hidden_neurons):
-
-    
-    model = Sequential()
-    model.add(Dense(units = hidden_neurons, kernel_initializer = 'uniform',activation = 'relu', input_dim = input_neurons))
-    
-    for i in range(0,hidden_layers):
-        model.add(Dense(units = hidden_neurons, kernel_initializer = 'uniform',activation = 'relu'))
-        if i % 2 == 1:
-            model.add(Dropout(0.3))
-    model.add(Dense(units = output_neurons, kernel_initializer = 'uniform',activation = 'relu'))
-    model.add(Dense(1,activation='linear'))
-
-    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = 'mse', metrics = ['mse',ccc,'mae',pearsonr,ccc_loss])
-            
-    return model
-
-def trainRegressor(model,x,y,epochs,batches,verb,calls):
-    history = model.fit(x, y, batch_size = batches, epochs = epochs, verbose=verb, callbacks=calls, validation_split=0.2)
-    return model,history
-
-def getDeepFeatures(featureDetector,x):
-    getLastLayer = K.function([featureDetector.layers[0].input], [featureDetector.layers[-2].output])
-    return getLastLayer([x])[0]
-
-def RegressorPrediction(model,x):
-    return model.predict(x)
-            
 def getData(subject_list,story_list, directory):
     x_separated,y_separated = fp.read_all_data(subject_list,story_list, directory)
 
@@ -165,11 +83,11 @@ validation_fused_faces = scaler.fit_transform(validation_fused_faces)
 # 2 Create and Train Face Feature Extractor (NEEDS TUNING ~ HARDCODED HYPERPARAMETERS)
 
 for outNeurons in output_neurons:
-    faceFeatureExtractor = CreateRegressor(input_neurons = len(train_fused_faces[0]), output_neurons=outNeurons,hidden_layers=5,learning_rate=0.1,
+    faceFeatureExtractor = net.CreateRegressor(input_neurons = len(train_fused_faces[0]), output_neurons=outNeurons,hidden_layers=5,learning_rate=0.1,
                                            optimizer='adam',hidden_neurons=len(train_fused_faces[0]))
     
     reduceLR = callbacks.ReduceLROnPlateau(monitor='val_loss',factor=0.5,patience=10,verbose=1,mode='min',min_delta=0.001,min_lr=0.0000001) 
-    faceFeatureExtractor,history = trainRegressor(faceFeatureExtractor,train_fused_faces,y_train,epochs=100,batches= 250,calls=[reduceLR], verb=2)
+    faceFeatureExtractor,history = net.trainRegressor(faceFeatureExtractor,train_fused_faces,y_train,epochs=100,batches= 250,calls=[reduceLR], verb=2)
     
     loss_values = history.history['loss']
     ccc_values = history.history['ccc']

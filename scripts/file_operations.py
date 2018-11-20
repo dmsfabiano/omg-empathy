@@ -158,6 +158,7 @@ def read_raw_images(data_directory,subject_list, story_list, y_directory):
     
     return subject_x,actor_x, y
 
+# for images
 def fusion(data_container):
    
     from sklearn.preprocessing import MinMaxScaler
@@ -174,10 +175,8 @@ def fusion(data_container):
     weighted_container = np.asarray([value if value <= 255 else 255 for value in weighted_container ])
     return weighted_container
 
-
 def fuseImages(image_1,image_2):
     
-
     shape = image_1.shape
     colum_image = np.zeros(shape, dtype='uint8')
 
