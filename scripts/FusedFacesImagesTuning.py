@@ -34,6 +34,14 @@ def ccc(y_true, y_pred):
     
     return numerator/denominator
 
+def focal_loss(y_true,y_pred,gamma=2, alpha=0.25):
+	eps = K.epsilon()
+    
+	y_pred=K.clip(y_pred,eps,1.- eps)
+    
+	pt_1 = tf.where(tf.equal(y_true, 1), y_pred, tf.ones_like(y_pred))
+	pt_0 = tf.where(tf.equal(y_true, 0), y_pred, tf.zeros_like(y_pred))
+	return -K.sum(alpha * K.pow(1. - pt_1, gamma) * K.log(pt_1))-K.sum((1-alpha) * K.pow( pt_0, gamma) * K.log(1. - pt_0))
 
 def ccc_loss(y_true, y_pred):
     c_value = ccc(y_true,y_pred)  
@@ -148,9 +156,7 @@ y_test = temp.copy()
 
 # DDNet Structure
 train_images = fp.read_landmark_images('../data/Images/Training/')
-print('Train Images Loaded!')
 test_images = fp.read_landmark_images('../data/Images/Validation/')
-print('Test Images Loaded!')
 
 train_images = np.reshape(train_images, (train_images.shape[0],128,128,1))
 test_images = np.reshape(test_images, (test_images.shape[0],128,128,1))
@@ -158,33 +164,28 @@ test_images = np.reshape(test_images, (test_images.shape[0],128,128,1))
 train_images,x_validation,y_train,y_validation = train_test_split(train_images,y_train,test_size=0.2)
 test_images, y_test = shuffle(test_images,y_test)
 
-output_dim = [16,32,64,128]
-dec = [True,False]
-output_neurons = [10,100,1000,2500,5000,10000]
+# Define parameters
+outNeurons = 100
+out_dim = 16
+mode = False # This increases or decreases the out_dim by */ 2 every lager
 
-print('Loading CNN!')
+ConvReg = CreateConv2DRegressor(shape=(128,128,1), output_neurons=outNeurons,learning_rate=0.00001, optimizer='adam',kernel=3,initial_dimention=out_dim, decreasing=mode)
 
-for out_dim in output_dim:
-    for mode in dec:
-        for outNeurons in output_neurons:
-            
-            ConvReg = CreateConv2DRegressor(shape=(128,128,1), output_neurons=outNeurons,learning_rate=0.00001, optimizer='adam',kernel=3,initial_dimention=out_dim, decreasing=mode)
+reduceLR = callbacks.ReduceLROnPlateau(monitor='val_loss',factor=0.2,patience=5,verbose=1,mode='min',min_lr=0.0000001,min_delta=0.001)
+earlyStop = callbacks.EarlyStopping(monitor='val_loss',min_delta=0.001,patience=10)
+ConvReg,history = trainRegressor(ConvReg,np.asarray(train_images),np.asarray(y_train),epochs=5,batches=25,calls=[reduceLR,earlyStop],verb=2,val_data=(np.asarray(x_validation),np.asarray(y_validation)))
 
-            reduceLR = callbacks.ReduceLROnPlateau(monitor='val_loss',factor=0.2,patience=5,verbose=1,mode='min',min_lr=0.0000001,min_delta=0.001)
-            earlyStop = callbacks.EarlyStopping(monitor='val_loss',min_delta=0.001,patience=10)
-            ConvReg,history = trainRegressor(ConvReg,np.asarray(train_images),np.asarray(y_train),epochs=5,batches=25,calls=[reduceLR,earlyStop],verb=2,val_data=(np.asarray(x_validation),np.asarray(y_validation)))
+loss_values = history.history['loss']
+ccc_values = history.history['ccc']
 
-            loss_values = history.history['loss']
-            ccc_values = history.history['ccc']
-            
-            print('Average loss: {0} +/- {1}, ccc: {2} +/- {3}'.format(np.mean(loss_values),np.std(loss_values),np.mean(ccc_values),np.std(ccc_values)))
+print('Average loss: {0} +/- {1}, ccc: {2} +/- {3}'.format(np.mean(loss_values),np.std(loss_values),np.mean(ccc_values),np.std(ccc_values)))
 
-            metric = ConvReg.evaluate(np.asarray(test_images),y_test, verbose=0)
-            mse = metric[1]
-            accuracy = metric[2] * 100
-            CCC = metric[3]
-            mae = metric[4]
-            r = metric[5]
-        
-            print('Faces images statistics on testing: {0} mse, {1}% accuracy, and {2} ccc \n with parameters: {3} output dimentions, {4} dim neurons, and mode: {5}, MAE: {6}, R:{7}'.format(
-                    mse,accuracy,CCC,out_dim,outNeurons,mode,mae,r))
+metric = ConvReg.evaluate(np.asarray(test_images),y_test, verbose=0)
+mse = metric[1]
+accuracy = metric[2] * 100
+CCC = metric[3]
+mae = metric[4]
+r = metric[5]
+
+print('Faces images statistics on testing: {0} mse, {1}% accuracy, and {2} ccc \n with parameters: {3} output dimentions, {4} dim neurons, and mode: {5}, MAE: {6}, R:{7}'.format(
+        mse,accuracy,CCC,out_dim,outNeurons,mode,mae,r))

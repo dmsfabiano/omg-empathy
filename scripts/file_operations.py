@@ -96,12 +96,14 @@ def read_landmark_images(data_directory='../data/Images/'):
 		return np.asarray([items[0] for items in sorted(images, key=lambda x: x[1])])
 
 def read_raw_images(data_directory,subject_list, story_list, y_directory):
-    data_directory = ''
+    
+    data_directory = 'C:/Users/Diego Fabiano/Research/Data/OMG_RAW/Training/'
+    y_directory = 'C:/Users/Diego Fabiano/Documents/OMG-FG-Challenge/data/Training/Annotations/'
     subject_list = [1,2,3,4,5,6,7,8,9,10]
     story_list = [2,4,5,8]
     
     file_list = [file for file in os.listdir(data_directory) if file.endswith('.png')]
-    y_file_list = [file for file in os.listdir(y_directory) if file.endswith('.png')]
+    y_file_list = [file for file in os.listdir(y_directory) if file.endswith('.csv')]
     
     subject_container = [[[] for story in range(0,len(story_list))] for subject in range(0,len(subject_list))]
     actor_container = [[[] for story in range(0,len(story_list))] for subject in range(0,len(subject_list))]
@@ -112,20 +114,22 @@ def read_raw_images(data_directory,subject_list, story_list, y_directory):
         image = cv2.imread(f)
         subject = int(f.split('/')[-1].split('_')[1])
         story = int(f.split('/')[-1].split('_')[3])
-        frame = int(f.split('/')[-1].split('_')[5])
+        
         
         person = f.split('/')[-1].split('_')[-1].split('.')[0]
         
-        if person is 'actor':    
-            actor_container[subject][story].append((image,frame))
+        if person == 'actor':    
+            frame = int(f.split('/')[-1].split('_')[5])
+            actor_container[subject_list.index(subject)][story_list.index(story)].append((cv2.resize(image, (128,128)),frame))
         else:
-            subject_container[subject][story].append((image,frame))
+            frame = int(f.split('/')[-1].split('_')[-1].split('.')[0])
+            subject_container[subject_list.index(subject)][story_list.index(story)].append((cv2.resize(image, (128,128)),frame))
 
     # Arrange images in right order
     for subject in range(0,len(subject_list)):
-        for story in range(0,len(story)):
-            subject_container = sorted(subject_container[subject][story], key=lambda x: x[1])
-            actor_container = sorted(actor_container[subject][story], key=lambda x: x[1])
+        for story in range(0,len(story_list)):
+            subject_container[subject][story] = sorted(subject_container[subject][story], key=lambda x: x[1])
+            actor_container[subject][story] = sorted(actor_container[subject][story], key=lambda x: x[1])
     
     
     # Get valence levels
@@ -134,7 +138,7 @@ def read_raw_images(data_directory,subject_list, story_list, y_directory):
         f = y_directory + file
         subject = int(f.split('/')[-1].split('_')[1])
         story = int(f.split('/')[-1].split('_')[-1].split('.')[0])
-        y_container[subject][story] = pd.read_csv(f, index_col=None)['valence'].values
+        y_container[subject_list.index(subject)][story_list.index(story)] = pd.read_csv(f, index_col=None)['valence'].values
         
     subject_x,actor_x,y = [], [], []
     # Order everything in one big container
@@ -144,7 +148,8 @@ def read_raw_images(data_directory,subject_list, story_list, y_directory):
                 subject_x.append(subject_container[subject][story][index][0])
                 actor_x.append(actor_container[subject][story][index][0])
                 y.append(y_container[subject][story][index])                
-                
+    
+    subject_container, actor_container, y_container = None,None,None
     # Scale Images
     from sklearn.preprocessing import StandardScaler
     scaler = StandardScaler(copy =False)
@@ -152,3 +157,58 @@ def read_raw_images(data_directory,subject_list, story_list, y_directory):
     actor_x = scaler.fit_transform(actor_x)
     
     return subject_x,actor_x, y
+
+def fusion(data_container):
+   
+    from sklearn.preprocessing import MinMaxScaler
+    
+    scaler = MinMaxScaler(feature_range=(0.5,1))
+    variance_container = np.array([np.var(signal) for signal in data_container])
+    variance_container = scaler.fit_transform(np.reshape(variance_container, newshape=(-1,1)))
+    
+    weighted_container = np.array([0.0 for i in range(0,len(data_container[0]))])
+    
+    for index,signal in enumerate(data_container):
+        signal = np.multiply(np.asarray(signal),variance_container[index])
+        weighted_container = np.add(weighted_container,signal)
+    weighted_container = np.asarray([value if value <= 255 else 255 for value in weighted_container ])
+    return weighted_container
+
+
+def fuseImages(image_1,image_2):
+    
+
+    shape = image_1.shape
+    colum_image = np.zeros(shape, dtype='uint8')
+
+    for i in range(0,len(image_1)):
+        b1,g1,r1 = image_1[:,i][:,0], image_1[:,i][:,1], image_1[:,i][:,2]
+        b2,g2,r2 = image_2[:,i][:,0], image_2[:,i][:,1], image_2[:,i][:,2]
+        
+        f1,f2,f3 = fusion([b1,b2]), fusion([g1,g2]), fusion([r1,r2])
+        
+        colum_image[:,i][:,0] = f1
+        colum_image[:,i][:,1] = f2
+        colum_image[:,i][:,2] = f3
+    
+    row_image = np.zeros(shape, dtype='uint8')
+    for i in range(0,len(image_1)):
+        b1,g1,r1 = image_1[i,:][:,0], image_1[i,:][:,1], image_1[i,:][:,2]
+        b2,g2,r2 = image_2[i,:][:,0], image_2[i,:][:,1], image_2[i,:][:,2]
+        
+        f1,f2,f3 = fusion([b1,b2]), fusion([g1,g2]), fusion([r1,r2])
+        
+        row_image[i,:][:,0] = f1
+        row_image[i,:][:,1] = f2
+        row_image[i,:][:,2] = f3
+      
+
+    avg_image = np.zeros((shape), dtype='uint8')
+    
+    for i in range(0,len(row_image)):
+        for j in range(0,len(row_image)):
+            avg_image[i][j][0] = np.mean([colum_image[i][j][0],row_image[i][j][0]])
+            avg_image[i][j][1] = np.mean([colum_image[i][j][1],row_image[i][j][1]])
+            avg_image[i][j][2] = np.mean([colum_image[i][j][2],row_image[i][j][2]])
+
+    return avg_image
