@@ -14,12 +14,15 @@ def face_detect(frame, cascade, previous_face, actor):
 	gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
 	faces = cascade.detectMultiScale(    
 			gray,
-			scaleFactor=1.5,
-			minNeighbors=5,
-			minSize=(30, 30),
+			scaleFactor=1.1,
+			minNeighbors=3,
+			minSize=(90, 90),
 		)
 	if not np.any(faces):
-		return previous_face.face
+		if actor:
+			return previous_face.actor_face
+		else:
+			return previous_face.face
 	for (x,y,w,h) in faces:
 		frame = frame[y:y+h, x:x+w]
 		if actor:
@@ -53,8 +56,8 @@ def write_frames(data, training=True):
 	frames,path = data[0],data[1]
 	file_name_write = path.split('/')[-1].split('.')[0]
 	for number, frame in enumerate(frames):
-		cv2.imwrite('../data/OriginalImages/Training/'+file_name_write+'_frame_'+str(number)+'.png' if training else '../data/OriginalImages/Training/'+file_name_write+'_frame_'+str(number)+'.png', frame[1])
-		cv2.imwrite('../data/OriginalImages/Training/'+file_name_write+'_frame_'+str(number)+'_actor.png' if training else '../data/OriginalImages/Training/'+file_name_write+'_frame_'+str(number)+'_actor.png', frame[0])
+		cv2.imwrite('../data/OriginalImages/Training/'+file_name_write+'_frame_'+str(number)+'.png' if training else '../data/OriginalImages/Validation/'+file_name_write+'_frame_'+str(number)+'.png', frame[1])
+		cv2.imwrite('../data/OriginalImages/Training/'+file_name_write+'_frame_'+str(number)+'_actor.png' if training else '../data/OriginalImages/Validation/'+file_name_write+'_frame_'+str(number)+'_actor.png', frame[0])
 
 def write_frames_wrapper(args):
 	write_frames(*args)
