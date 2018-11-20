@@ -127,7 +127,7 @@ def getDeepFeatures(featureDetector,x):
 def RegressorPrediction(model,x):
     return model.predict(x)
 
-def graphTrainingData(history, imagePath='train_graph.png', metric='acc'):
+def graphTrainingData(history, imagePath='train_graph.png', metrics=['acc'], show = False):
     """
     This function cretes a graph where the x axis is the epoch or training iteration, and 
     in the y axis we represent the metric speficied (by default, accuracy) of the model
@@ -138,11 +138,19 @@ def graphTrainingData(history, imagePath='train_graph.png', metric='acc'):
     imagePath: path and name of the graph image to create
     metric: metric to graph or plot
     """
-    fig = plt.figure()
-    plt.plot(history.history[metric])
-    plt.plot(history.history['val_' + metric])
-    plt.title(metric + ' Training Graph')
-    plt.ylabel(metric)
-    plt.xlabel('epoch')
-    plt.legend(['train', 'validation'], loc = 'upper left')
-    plt.savefig(imagePath)
+    nrows = max(3, len(metrics))
+    ncols = len(metrics)//3
+    fig, ax = plt.subplots(nrows=nrows, ncols=ncols)
+    metricIndx = 0
+    for row in ax:
+        for col in row:
+            col.plot(history.history[metrics[metricIndx]])
+            col.plot(history.history['val_' + metrics[metricIndx]])
+            col.title(metrics[metricIndx] + ' Training Graph')
+            col.ylabel(metrics[metricIndx])
+            col.xlabel('epoch')
+            col.legend(['train', 'validation'], loc = 'upper left')
+    if (show):
+        plt.show()
+    else:
+        plt.savefig(imagePath)
