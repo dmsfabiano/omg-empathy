@@ -21,6 +21,18 @@
 #include <iostream>
 #include <string>
 
+#include <fstream>
+#include <iostream>
+//#include <filesystem>
+//namespace fs = std::filesystem;
+//void createSpectrographs(std::string sParentDirectory)
+//{
+//	for (auto& wavFile : fs::directory_iterator(sParentDirectory))
+//	{
+//
+//	}
+//}
+
 int main(int argc, const char *argv[])
 { 
     //if (argc < 2){
@@ -28,7 +40,7 @@ int main(int argc, const char *argv[])
     //    return -1;
     //}
 	//std::string fname(argv[1]);
-	std::string fname = "D:\\Neil_TFS\\AR Emotion Research\\OMG - Empathy - Challenge\\omg - empathy\\data\\audio - split\\Training\\Subject_1_Story_8_frame_2061.wav";
+	std::string fname = "/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio/Training/Subject_1_Story_8.wav";
 
     Spectrograph spectrograph(fname, 256, 256);
 
@@ -37,6 +49,9 @@ int main(int argc, const char *argv[])
     }
     spectrograph.set_window(Utility::blackman_harris);
     spectrograph.compute(2048, 0.8);
-    spectrograph.save_image("spectrogram.png", false);
+    spectrograph.save_image("spectrogram2.png", false);
     return 0;
+
+	//createSpectrographs("/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio-split/Training/");
+
 }
