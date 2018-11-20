@@ -127,17 +127,17 @@ def getDeepFeatures(featureDetector,x):
 def RegressorPrediction(model,x):
     return model.predict(x)
 
-"""
-This function cretes a graph where the x axis is the epoch or training iteration, and 
-in the y axis we represent the metric speficied (by default, accuracy) of the model
-at that point in the training process on the training and validation dataset.
-
-Params:
+def graphTrainingData(history, imagePath='train_graph.png', metric='acc'):
+    """
+    This function cretes a graph where the x axis is the epoch or training iteration, and 
+    in the y axis we represent the metric speficied (by default, accuracy) of the model
+    at that point in the training process on the training and validation dataset.
+    
+    Params:
     history: training history object returned by Keras after training the model
     imagePath: path and name of the graph image to create
     metric: metric to graph or plot
-"""
-def graphTrainingData(history, imagePath='train_graph.png', metric='acc'):
+    """
     fig = plt.figure()
     plt.plot(history.history[metric])
     plt.plot(history.history['val_' + metric])
