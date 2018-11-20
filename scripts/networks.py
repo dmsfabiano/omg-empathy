@@ -6,7 +6,6 @@ from keras import backend as K
 import tensorflow as tf
 
 import matplotlib as mpl
-mpl.use('PDF')
 import matplotlib.pyplot as plt
 
 
@@ -138,19 +137,22 @@ def graphTrainingData(history, imagePath='train_graph.png', metrics=['acc'], sho
     imagePath: path and name of the graph image to create
     metric: metric to graph or plot
     """
-    nrows = max(3, len(metrics))
-    ncols = len(metrics)//3
-    fig, ax = plt.subplots(nrows=nrows, ncols=ncols)
-    metricIndx = 0
-    for row in ax:
-        for col in row:
-            col.plot(history.history[metrics[metricIndx]])
-            col.plot(history.history['val_' + metrics[metricIndx]])
-            col.title(metrics[metricIndx] + ' Training Graph')
-            col.ylabel(metrics[metricIndx])
-            col.xlabel('epoch')
-            col.legend(['train', 'validation'], loc = 'upper left')
+    fig = plt.figure()
+    nrows = max(1, len(metrics)//3)
+    ncols = min(3, len(metrics))
+    print('Number of rows: ', nrows)
+    print('Number of cols: ', ncols)
+    for i in range(len(metrics)):
+        print('Plotting metric ' + metrics[i])
+        sbplt = fig.add_subplot(nrows, ncols, i+1)
+        sbplt.plot(history.history[metrics[i]])
+        sbplt.plot(history.history['val_' + metrics[i]])
+        sbplt.set_title(metrics[i] + ' Training Graph')
+        sbplt.set_ylabel(metrics[i])
+        sbplt.set_xlabel('epoch')
+    fig.legend(['train', 'validation'], loc = 'upper left')
     if (show):
         plt.show()
     else:
+        mpl.use('PDF')
         plt.savefig(imagePath)
