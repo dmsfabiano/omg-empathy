@@ -1,9 +1,8 @@
 import file_operations as fp
 import numpy as np
 import networks as net
-from sklearn.utils import shuffle
-from sklearn.model_selection import train_test_split
 from keras import callbacks
+from sklearn.preprocessing import StandardScaler
 
             
 def getData(subject_list,story_list, directory):
@@ -19,49 +18,59 @@ train_sbj_list = [1,2,3,4,5,6,7,8,9,10]
 train_story_list = [2,4,5,8]
 validation_story_list =  [1]
 
-_,y_train = getData(train_sbj_list,train_story_list,'../data/results/Training/')
-_,y_validation = getData(train_sbj_list,validation_story_list,'../data/results/Validation/')
-
-temp = []
-for video in y_train:
-	temp.extend(video)
-y_train = temp.copy()
-
-temp = []
-for video in y_validation:
-	temp.extend(video)
-y_test = temp.copy()
+train_split = 0.9
 
 # DDNet Structure
-train_images = fp.read_landmark_images('../data/Images/Training/')
-test_images = fp.read_landmark_images('../data/Images/Validation/')
+train_subject_x, train_actor_x, train_y = fp.read_raw_images(subjectActorBoth=2, reduce_factor=0.25)
 
-train_images = np.reshape(train_images, (train_images.shape[0],128,128,1))
-test_images = np.reshape(test_images, (test_images.shape[0],128,128,1))
+shuffled_data = net.unison_shuffle([train_subject_x,train_actor_x,train_y])
+train_subject_x, train_actor_x, train_y = shuffled_data[0], shuffled_data[1], shuffled_data[2]
 
-train_images,x_validation,y_train,y_validation = train_test_split(train_images,y_train,test_size=0.2)
-test_images, y_test = shuffle(test_images,y_test)
+test_subject_x, test_actor_x, test_y= fp.read_raw_images(data_directory='C:/Users/Diego Fabiano/Research/Data/OMG_RAW/Validation/',
+                                                 subject_list=train_sbj_list, 
+                                                 story_list = validation_story_list, 
+                                                 y_directory='C:/Users/Diego Fabiano/Documents/OMG-FG-Challenge/data/Validation/Annotations/',reduce_factor=0.25,subjectActorBoth=2)
+shuffled_data = net.unison_shuffle([test_subject_x,test_actor_x,test_y])
+test_subject_x, test_actor_x, test_y = shuffled_data[0], shuffled_data[1], shuffled_data[2]
+
+# Normalize Data
+scaler = StandardScaler()
+train_subject_x, train_actor_x = scaler.fit_transform(train_subject_x), scaler.fit_transform(train_actor_x)
+test_subject_x, test_actor_x = scaler.fit_transform(test_subject_x), scaler.fit_transform(test_actor_x)
+
+# Get Subject validation data
+val_subj_x = train_subject_x[int(len(train_subject_x)*train_split):-1]
+train_subject_x = train_subject_x[0:int(len(train_subject_x)*train_split)]
+
+# Get validation ground truth
+val_y = train_y[int(len(train_y)*train_split):-1]
+train_y = train_y[0:int(len(train_y)*train_split)]
+
+# Get validation actor data
+val_actor_x = train_actor_x[int(len(train_actor_x)*train_split):-1]
+train_actor_x = train_actor_x[0:int(len(train_subject_x)*train_split)]
+
+
 
 # Define parameters
 outNeurons = 100
 out_dim = 16
-mode = False # This increases or decreases the out_dim by */ 2 every lager
+mode = False # This increases or decreases the out_dim by */ 2 every layer
 
 
 # ---------------------------------------- NETWORK -------------------------------------------------------
 
-ConvReg = net.CreateConv2DRegressor(shape=(128,128,1), output_neurons=outNeurons,learning_rate=0.00001, optimizer='adam',kernel=3,initial_dimention=out_dim, decreasing=mode)
+ConvReg = net.CreateConv2DRegressor(shape=(128,128,3), output_neurons=outNeurons,learning_rate=0.001, optimizer='adam',kernel=3,initial_dimention=out_dim, decreasing=mode)
 
-reduceLR = callbacks.ReduceLROnPlateau(monitor='val_loss',factor=0.2,patience=5,verbose=1,mode='min',min_lr=0.0000001,min_delta=0.001)
-earlyStop = callbacks.EarlyStopping(monitor='val_loss',min_delta=0.001,patience=10)
-ConvReg,history = net.trainRegressor(ConvReg,np.asarray(train_images),np.asarray(y_train),epochs=5,batches=25,calls=[reduceLR,earlyStop],verb=2,val_data=(np.asarray(x_validation),np.asarray(y_validation)))
+reduceLR = callbacks.ReduceLROnPlateau(monitor='loss',factor=0.2,patience=5,verbose=1,mode='min',min_lr=0.0000001,min_delta=0.001)
+history = net.trainRegressor(ConvReg,x,y,epochs,batches,verb,calls,val_data)
 
 loss_values = history.history['loss']
 ccc_values = history.history['ccc']
 
 print('Average loss: {0} +/- {1}, ccc: {2} +/- {3}'.format(np.mean(loss_values),np.std(loss_values),np.mean(ccc_values),np.std(ccc_values)))
 
-metric = ConvReg.evaluate(np.asarray(test_images),y_test, verbose=0)
+metric = ConvReg.evaluate_generator(net.imageLoader(test_paths_subject,16), steps_per_epoch=len(test_paths_subject)//16, verbose=0)
 mse = metric[1]
 accuracy = metric[2] * 100
 CCC = metric[3]
