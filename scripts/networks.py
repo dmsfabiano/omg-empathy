@@ -8,7 +8,6 @@ import cv2
 import numpy as np
 
 import matplotlib as mpl
-mpl.use('PDF')
 import matplotlib.pyplot as plt
 
 def imageLoader(files,batch_size=256):
@@ -166,7 +165,7 @@ def getDeepFeatures(featureDetector,x):
 def RegressorPrediction(model,x):
     return model.predict(x)
 
-def graphTrainingData(history, imagePath='train_graph.png', metrics=['acc'], show = False):
+def graphTrainingData(history, imagePath='train_graph.png', show = False):
     """
     This function cretes a graph where the x axis is the epoch or training iteration, and 
     in the y axis we represent the metric speficied (by default, accuracy) of the model
@@ -178,6 +177,11 @@ def graphTrainingData(history, imagePath='train_graph.png', metrics=['acc'], sho
     metric: metric to graph or plot
     """
     fig = plt.figure()
+    metrics = []
+    for metric in history.history:
+        if not metric.startswith("val_"):
+            metrics.append(metric)
+            print(metric)
     nrows = max(1, len(metrics)//3)
     ncols = min(3, len(metrics))
     print('Number of rows: ', nrows)
