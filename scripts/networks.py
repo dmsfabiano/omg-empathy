@@ -4,11 +4,40 @@ import operator
 from keras.optimizers import RMSprop, adam,adamax, Nadam
 from keras import backend as K
 import tensorflow as tf
+import cv2
+import numpy as np
 
 import matplotlib as mpl
 mpl.use('PDF')
 import matplotlib.pyplot as plt
 
+def imageLoader(files,batch_size=256):
+    
+    def loadImages(files):
+        x = []    
+        for file in files:
+            x.append(cv2.imread(file[0]))
+        return np.reshape(np.asarray(x), (len(files),256,256,3))
+    
+    def loadValues(values):
+        y = []    
+        for value in values:
+            y.append(value[1])
+        return np.asarray(y)
+    
+    L = len(files)
+    while True:
+        batch_start = 0
+        batch_end = batch_size
+        
+        while batch_start < L:
+            limit = min(batch_end,L)
+            x = loadImages(files[batch_start:limit])
+            y = loadValues(files[batch_start:limit])
+            yield (x,y)
+            
+            batch_start += batch_size
+            batch_end += batch_size
 
 def ccc(y_true, y_pred):
     x = y_true
@@ -46,7 +75,6 @@ def ccc_loss(y_true, y_pred):
     c_value = ccc(y_true,y_pred)  
     return (1 - c_value)/2
 
-
 def pearsonr(y_true,y_pred):
     x = y_true
     y = y_pred
@@ -59,6 +87,15 @@ def pearsonr(y_true,y_pred):
 
     r = K.maximum(K.minimum(r, 1.0), -1.0)
     return 1 - K.square(r)
+
+
+def unison_shuffle(data_container):
+    p = np.random.permutation(len(data_container[0]))
+    
+    placeholder = [data[p] for data in data_container]
+    
+    return placeholder
+
 
 def getOptimizer(name,rate):
     if name is 'adamax':
@@ -127,7 +164,7 @@ def getDeepFeatures(featureDetector,x):
 def RegressorPrediction(model,x):
     return model.predict(x)
 
-def graphTrainingData(history, imagePath='train_graph.png', metric='acc'):
+def graphTrainingData(history, imagePath='train_graph.png', metrics=['acc'], show = False):
     """
     This function cretes a graph where the x axis is the epoch or training iteration, and 
     in the y axis we represent the metric speficied (by default, accuracy) of the model
@@ -139,10 +176,21 @@ def graphTrainingData(history, imagePath='train_graph.png', metric='acc'):
     metric: metric to graph or plot
     """
     fig = plt.figure()
-    plt.plot(history.history[metric])
-    plt.plot(history.history['val_' + metric])
-    plt.title(metric + ' Training Graph')
-    plt.ylabel(metric)
-    plt.xlabel('epoch')
-    plt.legend(['train', 'validation'], loc = 'upper left')
-    plt.savefig(imagePath)
+    nrows = max(1, len(metrics)//3)
+    ncols = min(3, len(metrics))
+    print('Number of rows: ', nrows)
+    print('Number of cols: ', ncols)
+    for i in range(len(metrics)):
+        print('Plotting metric ' + metrics[i])
+        sbplt = fig.add_subplot(nrows, ncols, i+1)
+        sbplt.plot(history.history[metrics[i]])
+        sbplt.plot(history.history['val_' + metrics[i]])
+        sbplt.set_title(metrics[i] + ' Training Graph')
+        sbplt.set_ylabel(metrics[i])
+        sbplt.set_xlabel('epoch')
+    fig.legend(['train', 'validation'], loc = 'upper left')
+    if (show):
+        plt.show()
+    else:
+        mpl.use('PDF')
+        plt.savefig(imagePath)

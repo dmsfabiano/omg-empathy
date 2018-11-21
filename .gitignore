@@ -29,3 +29,9 @@ data/Images/Validation/*
 /scripts/c++-scripts/FaceDetector
 /scripts/c++-scripts/cmake_install.cmake
 /scripts/c++-scripts/Makefile
+data/audio-split/*
+data/audio/*
+!/scripts/c++-scripts/cpp-spectrogram-master
+data/Visualization/Validation/*
+data/Visualization/Training/*
+data/spectrograms/*
