@@ -8,6 +8,7 @@ import cv2
 import numpy as np
 
 import matplotlib as mpl
+mpl.use('PDF')
 import matplotlib.pyplot as plt
 
 def imageLoader(files,batch_size=256):
@@ -150,7 +151,7 @@ def CreateConv2DRegressor(shape, output_neurons,learning_rate, optimizer,kernel,
     model.add(Dense(output_neurons, activation='relu'))
     model.add(Dropout(0.5))
     model.add(Dense(1,activation='linear'))
-    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = ccc_loss, metrics =  ['mse','accuracy',ccc, 'mae'])
+    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = 'mse', metrics =  ['mse','accuracy',ccc, 'mae'])
 
     return model
 
@@ -165,7 +166,7 @@ def getDeepFeatures(featureDetector,x):
 def RegressorPrediction(model,x):
     return model.predict(x)
 
-def graphTrainingData(history, imagePath='train_graph.png', show = False):
+def graphTrainingData(history, imagePath='train_graph.png', metrics=['acc'], show = False):
     """
     This function cretes a graph where the x axis is the epoch or training iteration, and 
     in the y axis we represent the metric speficied (by default, accuracy) of the model

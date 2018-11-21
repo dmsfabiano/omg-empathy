@@ -57,8 +57,8 @@ mode = False # This increases or decreases the out_dim by */ 2 every layer
 
 ConvReg = net.CreateConv2DRegressor(shape=(128,128,3), output_neurons=outNeurons,learning_rate=0.0001, optimizer='sgd',kernel=3,initial_dimention=out_dim, decreasing=mode)
 
-reduceLR = callbacks.ReduceLROnPlateau(monitor='loss',factor=0.2,patience=2,verbose=1,mode='min',min_lr=0.0000001,min_delta=0.001)
-ConvReg, history = net.trainRegressor(ConvReg,train_subject_x,train_y,5,250,1,[reduceLR],(val_subj_x,val_y))
+reduceLR = callbacks.ReduceLROnPlateau(monitor='val_loss',factor=0.2,patience=2,verbose=1,mode='min',min_lr=0.0000001,min_delta=0.001)
+ConvReg, history = net.trainRegressor(ConvReg,train_subject_x,train_y,10,250,1,[reduceLR],(val_subj_x,val_y))
 
 loss = history.history['loss']
 ccc = history.history['ccc']
