@@ -31,3 +31,5 @@ data/Images/Validation/*
 data/audio-split/*
 data/audio/*
 !/scripts/c++-scripts/cpp-spectrogram-master
+data/Visualization/Validation/*
+data/Visualization/Training/*

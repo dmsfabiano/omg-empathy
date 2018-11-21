@@ -62,10 +62,10 @@ bool Spectrograph::file_is_valid(){
 }
 
 void Spectrograph::read_in_data(){
-    std::cout << "Reading in file: " << fname_ << std::endl;
+    //std::cout << "Reading in file: " << fname_ << std::endl;
 
     int audio_length_sec = file_handle_.frames() / file_handle_.samplerate();
-    std::cout << "Length (s): " << audio_length_sec << std::endl;
+    //std::cout << "Length (s): " << audio_length_sec << std::endl;
 
     const int data_size = file_handle_.channels() * file_handle_.frames();
 
@@ -112,7 +112,7 @@ void Spectrograph::save_image(
     const double log_coef = 
         (1.0/log(static_cast<double>(height_ + 1))) * static_cast<double>(data_size_used);
 
-    std::cout << "Drawing." << std::endl;
+    //std::cout << "Drawing." << std::endl;
     for (int x = 0; x < spectrogram_.size(); x++){
         int freq = 0;
         for (int y = 1; y <= height_; y++){
@@ -129,7 +129,7 @@ void Spectrograph::save_image(
         }
     }
 
-    std::cout << "Saving to file " << fname << std::endl;
+    //std::cout << "Saving to file " << fname << std::endl;
     FreeImage_Save(FIF_PNG, bitmap, fname.c_str(), PNG_DEFAULT);
     FreeImage_Unload(bitmap);
 
@@ -152,12 +152,12 @@ void Spectrograph::compute(const int CHUNK_SIZE, const float OVERLAP){
     const int STEP = static_cast<int>(CHUNK_SIZE * (1.0 - OVERLAP));
 
     // Print out computation info
-    std::cout << "Computing spectrogram..." << std::endl;
-    std::cout << "Chunk: " << CHUNK_SIZE << " Overlap: " 
-              << OVERLAP * CHUNK_SIZE << std::endl;
+    //std::cout << "Computing spectrogram..." << std::endl;
+    //std::cout << "Chunk: " << CHUNK_SIZE << " Overlap: " 
+    //        << OVERLAP * CHUNK_SIZE << std::endl;
 
-    std::cout << "Step Size: " << STEP << std::endl;
-    std::cout << "Data Size: " << data_.size() << std::endl;
+    //std::cout << "Step Size: " << STEP << std::endl;
+    //std::cout << "Data Size: " << data_.size() << std::endl;
 
     // Pad the data
     int new_size = 0;
@@ -165,7 +165,7 @@ void Spectrograph::compute(const int CHUNK_SIZE, const float OVERLAP){
         new_size += STEP;
     }
     if (new_size != data_.size()){
-        std::cout << "Padding data." << std::endl;
+        //std::cout << "Padding data." << std::endl;
         new_size += CHUNK_SIZE;
         std::vector<short> padding(new_size - data_.size(), 0);
         data_.insert(data_.end(), padding.begin(), padding.end());
@@ -191,9 +191,9 @@ void Spectrograph::chunkify(const int CHUNK_SIZE, const int STEP){
     // spectrogram_.reserve((data_.size() - CHUNK_SIZE)/STEP + 1);
     spectrogram_.reserve(width_);
 
-    std::cout << "Computing chunks." << std::endl;
+    //std::cout << "Computing chunks." << std::endl;
     int num_chunks = get_number_of_chunks(CHUNK_SIZE, STEP);
-    std::cout << "Number of Chunks: " << num_chunks << std::endl;
+    //std::cout << "Number of Chunks: " << num_chunks << std::endl;
 
     float chunk_width_ratio = static_cast<float>(num_chunks)/width_;
 
