@@ -26,6 +26,10 @@
 #include <experimental/filesystem>
 namespace fs = std::experimental::filesystem;
 
+#include <atomic>         // std::atomic
+#include <thread>         // std::thread
+#include <vector>         // std::vector
+
 void createSpectrographs(const std::string& sParentDirectory, const std::string& sOutputDirectory)
 {
 	for (const auto& p : fs::directory_iterator(sParentDirectory))
@@ -48,27 +52,73 @@ void createSpectrographs(const std::string& sParentDirectory, const std::string&
 	}
 }
 
+void createSingleSpetrograph(const std::string& sWavFile, const std::string& sOutputDirectory)
+{
+	Spectrograph spectrograph(sWavFile, 256, 256);
+
+	if (!spectrograph.file_is_valid()) {
+		exit(1);
+	}
+
+	spectrograph.set_window(Utility::blackman_harris);
+	spectrograph.compute(2048, 0.8);
+
+	// compute output file name
+	size_t firstIndex = sWavFile.find_last_of("/");
+	size_t lastIndex = sWavFile.find_last_of(".");
+	std::string wavFileNoExtension = sWavFile.substr(firstIndex, lastIndex);
+	spectrograph.save_image(sOutputDirectory + wavFileNoExtension + ".png", false);
+}
+void createSpectrographsParallel(const std::string& sParentDirectory, const std::string& sOutputDirectory)
+{
+	std::vector<std::thread> threads;
+
+	for (const auto& p : fs::directory_iterator(sParentDirectory))
+	{
+		std::string sWavFile = p.path().string();
+		threads.push_back(std::thread(createSingleSpetrograph, sWavFile, sOutputDirectory));
+	}
+
+	for (auto& th : threads) th.join();
+}
+
 int main(int argc, const char *argv[])
 {
-	//if (argc < 2){
-	//    std::cout << "You must specify an input file." << std::endl;
-	//    return -1;
-	//}
-	//std::string fname(argv[1]);
-	//std::string fname = "/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio-split/Training/Subject_6_Story_4_frame_5640.wav";
+	//// serial code
+	//std::cout << "start training" << std::endl;
+	//createSpectrographs("/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio-split/Training/", "/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/Visualization/Training/");
+	//std::cout << "start validation" << std::endl;
+	//createSpectrographs("/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio-split/Validation/", "/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/Visualization/Validation/");
 
-	//Spectrograph spectrograph(fname, 256, 256);
+	// =====================================================================================
 
-	//if (!spectrograph.file_is_valid()) {
-	//	return -1;
-	//}
-	//spectrograph.set_window(Utility::blackman_harris);
-	//spectrograph.compute(2048, 0.8);
-	//spectrograph.save_image("spectrogram-small-3.png", false);
-	//return 0;
-
+	// parallel code
 	std::cout << "start training" << std::endl;
-	createSpectrographs("/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio-split/Training/", "/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/Visualization/Training/");
+	createSpectrographsParallel(
+		"/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio-split/Training/",
+		"/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/spectrograms/Training/");
+	std::cout << "end training" << std::endl;
+
 	std::cout << "start validation" << std::endl;
-	createSpectrographs("/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio-split/Validation/", "/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/Visualization/Validation/");
+	createSpectrographsParallel(
+		"/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio-split/Validation/",
+		"/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/spectrograms/Validation/");
+	std::cout << "end validation" << std::endl;
+
+	// =====================================================================================
+
+	//// very parallel code
+	//std::thread training(createSpectrographsParallel,
+	//	"/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio-split/Training/",
+	//	"/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/spectrograms/Training/");
+	//std::thread testing(createSpectrographsParallel,
+	//	"/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio-split/Validation/",
+	//	"/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/spectrograms/Validation/");
+	//std::cout << "start training and testing" << std::endl;
+
+	//// synchronize threads
+	//training.join();
+	//testing.join();
+
+	//std::cout << "end training and testing";
 }
