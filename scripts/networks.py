@@ -1,7 +1,7 @@
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Flatten, BatchNormalization
 import operator
-from keras.optimizers import RMSprop, adam,adamax, Nadam
+from keras.optimizers import RMSprop, adam,adamax, Nadam, SGD
 from keras import backend as K
 import tensorflow as tf
 import cv2
@@ -98,12 +98,14 @@ def unison_shuffle(data_container):
 
 
 def getOptimizer(name,rate):
-    if name is 'adamax':
+    if name == 'adamax':
         return adamax(lr=rate)
-    elif name is 'adam':
+    elif name == 'adam':
         return adam(lr=rate)
-    elif name is 'nadam':
+    elif name == 'nadam':
         return Nadam(lr=rate)
+    elif name == 'sgd':
+        return SGD(lr=rate)
     else:
         return RMSprop(lr=rate)
     
@@ -119,7 +121,7 @@ def CreateRegressor(input_neurons, output_neurons,hidden_layers,learning_rate, o
     model.add(Dense(units = output_neurons, kernel_initializer = 'uniform',activation = 'relu'))
     model.add(Dense(1,activation='linear'))
 
-    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = ccc_loss, metrics = ['mse','accuracy',ccc, 'mae', pearsonr,ccc_loss])
+    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = 'mse', metrics = ['mse','accuracy',ccc, 'mae'])
             
     return model
 
@@ -149,7 +151,7 @@ def CreateConv2DRegressor(shape, output_neurons,learning_rate, optimizer,kernel,
     model.add(Dense(output_neurons, activation='relu'))
     model.add(Dropout(0.5))
     model.add(Dense(1,activation='linear'))
-    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = ccc_loss, metrics =  ['mse','accuracy',ccc, 'mae',ccc_loss])
+    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = 'mse', metrics =  ['mse','accuracy',ccc, 'mae'])
 
     return model
 
@@ -176,6 +178,11 @@ def graphTrainingData(history, imagePath='train_graph.png', metrics=['acc'], sho
     metric: metric to graph or plot
     """
     fig = plt.figure()
+    metrics = []
+    for metric in history.history:
+        if not metric.startswith("val_"):
+            metrics.append(metric)
+            print(metric)
     nrows = max(1, len(metrics)//3)
     ncols = min(3, len(metrics))
     print('Number of rows: ', nrows)
