@@ -23,6 +23,7 @@ data/Images/Validation/*
 /scripts/c++-scripts/CMakeFiles
 /scripts/*.sh
 /scripts/*.out
+/scripts/*.xml
 /scripts/__pycache__
 /scripts/c++-scripts/CMakeCache.txt
 /scripts/c++-scripts/FaceDetector
