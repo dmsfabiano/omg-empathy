@@ -123,6 +123,38 @@ def CreateRegressor(input_neurons, output_neurons,hidden_layers,learning_rate, o
             
     return model
 
+def CreateLSTMConv2DRegressor(shape, output_neurons, learning_rate, optimizer, kernel, initial_dimension, decreasing, return_sequence = True):
+    func = None
+    if decreasing:
+        func = operator.floordiv
+    else:
+        func = operator.mul
+
+    model = Sequential()
+
+    model.add(ConvLSTM2D(filters=initial_dimension, kernel_size=kernel, input_shape=shape),activation='relu', padding='same', return_sequence = return_sequence)
+    model.add(BatchNormalization())
+    next_dimension = func(initial_dimension, 2)
+
+    model.add(ConvLSTM2D(filters=next_dimension, kernel_size=kernel, activation='relu', padding='same', return_sequence = return_sequence))
+    model.add(BatchNormalization())
+    next_dimension = func(next_dimension, 2)
+
+    model.add(ConvLSTM2D(filters=next_dimension, kernel_size=kernel, activation='relu', padding='same', return_sequence = return_sequence))
+    model.add(BatchNormalization())
+    next_dimension = func(next_dimension, 2)
+
+    model.add(ConvLSTM2D(filters=next_dimension, kernel_size=kernel, activation='relu', padding='same', return_sequence = return_sequence))
+    model.add(BatchNormalization())
+    next_dimension = func(next_dimension, 2)
+
+    model.add(Dropout(0.5))
+    model.add(Flatten())
+    model.add(Dropout(0.5))
+    model.add(Dense(1, activation='linear'))
+    model.compile(optimizer = getOptimizer(optimizer, linear_rate), loss = ccc_loss, metrics = ['mse', 'accuracy', ccc, 'mae', ccc_loss])
+
+    return model
 
 def CreateConv2DRegressor(shape, output_neurons,learning_rate, optimizer,kernel,initial_dimention, decreasing):
     
