@@ -15,7 +15,7 @@ def imageLoader(files,batch_size=256):
     def loadImages(files):
         x = []    
         for file in files:
-            x.append(cv2.imread(file[0]))
+            x.append(cv2.imread(file[0][0]))
         return np.reshape(np.asarray(x), (len(files),256,256,3))
     
     def loadValues(values):
@@ -41,8 +41,8 @@ def imageLoader(files,batch_size=256):
 def ccc(y_true, y_pred):
     x = y_true
     y = y_pred
-    mx = K.mean(x)
-    my = K.mean(y)
+    mx = K.mean(x) + K.epsilon()
+    my = K.mean(y) + K.epsilon()
     xm, ym = x-mx, y-my
     
     r_num = K.sum(tf.multiply(xm,ym))
@@ -58,7 +58,6 @@ def ccc(y_true, y_pred):
     std_true_squared = K.square(K.std(x))
     
     denominator = tf.add(tf.add(std_predictions_squared,std_true_squared),mean_differences)
-    
     return numerator/denominator
 
 def focal_loss(y_true,y_pred,gamma=2, alpha=0.25):
@@ -87,7 +86,6 @@ def pearsonr(y_true,y_pred):
     r = K.maximum(K.minimum(r, 1.0), -1.0)
     return 1 - K.square(r)
 
-
 def unison_shuffle(data_container):
     p = np.random.permutation(len(data_container[0]))
     
@@ -108,23 +106,6 @@ def getOptimizer(name,rate):
     else:
         return RMSprop(lr=rate)
     
-def CreateRegressor(input_neurons, output_neurons,hidden_layers,learning_rate, optimizer,hidden_neurons):
-
-    
-    model = Sequential()
-    model.add(Dense(units = hidden_neurons, kernel_initializer = 'uniform',activation = 'relu', input_dim = input_neurons))
-    
-    for i in range(0,hidden_layers):
-        model.add(Dense(units = hidden_neurons, kernel_initializer = 'uniform',activation = 'relu'))
-
-    model.add(Dense(units = output_neurons, kernel_initializer = 'uniform',activation = 'relu'))
-    model.add(Dense(1,activation='linear'))
-
-    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = 'mse', metrics = ['mse','accuracy',ccc, 'mae'])
-            
-    return model
-
-
 def CreateLSTMConv2DRegressor(shape, output_neurons, learning_rate, optimizer, kernel, initial_dimension, decreasing, return_sequence = True):
     func = None
     if decreasing:
@@ -156,11 +137,70 @@ def CreateLSTMConv2DRegressor(shape, output_neurons, learning_rate, optimizer, k
     model.add(Dense(1, activation='linear'))
     model.compile(optimizer = getOptimizer(optimizer, learning_rate), loss = ccc_loss, metrics = ['mse', 'accuracy', ccc, 'mae', ccc_loss])
 
+    return model  
+    
+def CreateRegressor(input_neurons, output_neurons,hidden_layers,learning_rate, optimizer,hidden_neurons):
+
+    
+    model = Sequential()
+    model.add(Dense(units = hidden_neurons, kernel_initializer = 'uniform',activation = 'relu', input_dim = input_neurons))
+    
+    for i in range(0,hidden_layers):
+        model.add(Dense(units = hidden_neurons, kernel_initializer = 'uniform',activation = 'relu'))
+
+    model.add(Dense(units = output_neurons, kernel_initializer = 'uniform',activation = 'relu'))
+    model.add(Dense(1,activation='linear'))
+
+    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = 'mse', metrics = ['mse','accuracy',ccc, 'mae'])
+            
     return model
 
 
 def CreateConv2DRegressor(shape, output_neurons,learning_rate, optimizer,kernel,initial_dimention, decreasing):
     
+    model = Sequential()
+    
+    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu',input_shape=shape))
+    model.add(BatchNormalization())    
+    model.add(Dropout(0.2))
+
+    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu'))
+    model.add(BatchNormalization())
+
+    model.add(MaxPooling2D(pool_size=(2,2), padding='same'))
+    initial_dimention *= 2
+
+
+    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu'))
+    model.add(BatchNormalization())    
+    model.add(Dropout(0.2))
+
+    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu'))
+    model.add(BatchNormalization())
+
+    model.add(MaxPooling2D(pool_size=(2,2), padding='same'))
+    initial_dimention *= 2
+
+    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu'))
+    model.add(BatchNormalization())    
+    model.add(Dropout(0.2))
+
+    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu'))
+    model.add(BatchNormalization())
+    model.add(Dropout(0.2))
+
+    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu'))
+    model.add(BatchNormalization())
+    
+    model.add(MaxPooling2D(pool_size=(2,2), padding='same'))
+
+    model.add(Flatten())
+    model.add(Dense(output_neurons, activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(output_neurons, activation='relu'))
+    model.add(Dense(1,activation='linear'))
+
+    '''
     func = None
     if decreasing:
         func = operator.floordiv
@@ -184,7 +224,8 @@ def CreateConv2DRegressor(shape, output_neurons,learning_rate, optimizer,kernel,
     model.add(Dense(output_neurons, activation='relu'))
     model.add(Dropout(0.5))
     model.add(Dense(1,activation='linear'))
-    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = 'mse', metrics =  ['mse','accuracy',ccc, 'mae'])
+    '''
+    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = ccc_loss, metrics =  ['mse','accuracy',ccc,'mae'])
 
     return model
 

@@ -14,10 +14,37 @@ def getData(subject_list,story_list, directory):
     return x,y
 
 # --------------------------------------- DATA PRE-PROCESSING -----------------------------------------------------
-train_sbj_list = [2]
+train_sbj_list = [1,2,3,4,5,6,7,8,9,10]
 train_story_list = [2,4,5,8]
 validation_story_list =  [1]
 
+train_x, _, train_y = fp.read_raw_image_paths(data_directory='C:/Users/Diego Fabiano/Research/Data/OMG_RAW/Training/',
+                                           subject_list=train_sbj_list, 
+                                           story_list = train_story_list, 
+                                           y_directory='C:/Users/Diego Fabiano/Research/Data/OMG_RAW/Annotations/Training/')
+test_x, _, test_y = fp.read_raw_image_paths(data_directory='C:/Users/Diego Fabiano/Research/Data/OMG_RAW/Validation/',
+                                         subject_list=train_sbj_list, 
+                                         story_list = validation_story_list, 
+                                         y_directory='C:/Users/Diego Fabiano/Research/Data/OMG_RAW/Annotations/Validation/')
+
+ConvReg = net.CreateConv2DRegressor(shape=(256,256,3), output_neurons=100,learning_rate=0.0001, optimizer='rmsprop',kernel=3,initial_dimention=32, decreasing=False)
+reduceLR = callbacks.ReduceLROnPlateau(monitor='loss',factor=0.2,patience=2,verbose=1,mode='min',min_lr=0.0000001,min_delta=0.001)
+
+for story in range(len(train_story_list)):     
+    for subject in range(len(train_x)):
+        np.asarray(train_x[subject][story])
+        np.asarray(train_y[subject][story])
+        history = ConvReg.fit_generator(net.imageLoader(list(zip(train_x[subject][story],train_y[subject][story])), 64),
+                                        epochs=5,verbose=1,
+                                        steps_per_epoch=len(train_x[subject][story])//64)
+    
+for subject in range(len(train_sbj_list)):
+    story = 0
+    fp.writeModelOutput('C:/Users/Diego Fabiano/Research/Data/OMG_RAW/ModelOutput/',
+                        ConvReg.predict_generator(net.imageLoader(list(zip(np.asarray(test_x[subject][0]), np.asarray(test_y[subject][0]))), 64)), 
+                        train_sbj_list[subject], train_story_list[story])
+
+'''
 train_split = 0.9
 
 # DDNet Structure
@@ -44,7 +71,6 @@ train_y = train_y[0:int(len(train_y)*train_split)]
 # Get validation actor data
 val_actor_x = train_actor_x[int(len(train_actor_x)*train_split):-1]
 train_actor_x = train_actor_x[0:int(len(train_subject_x)*train_split)]
-
 
 
 # Define parameters
@@ -81,3 +107,6 @@ print('Testing statistics')
 
 print('Faces images statistics on testing: {0} mse, {1}% accuracy, and {2} ccc \n with parameters: {3} starting dimentions, {4} pre last layer neurons, and mode: {5}, MAE: {6}'.format(
         mse,accuracy,CCC,out_dim,outNeurons,mode,mae))
+
+values = ConvReg.predict(test_subject_x)
+'''

@@ -104,5 +104,3 @@ print('Testing statistics')
 
 print('Faces images statistics on testing: {0} mse, {1}% accuracy, and {2} ccc \n with parameters: {3} starting dimentions, {4} pre last layer neurons, and mode: {5}, MAE: {6}'.format(
         mse,accuracy,CCC,out_dim,outNeurons,mode,mae))
-
-
