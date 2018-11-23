@@ -193,6 +193,56 @@ def read_raw_images(data_directory='C:/Users/Diego Fabiano/Research/Data/OMG_RAW
 	if subjectActorBoth == 1:
 		return np.asarray(actor_x), np.asarray(y)
 
+
+
+def read_raw_images_timesteps(data_directory='C:/Users/Diego Fabiano/Research/Data/OMG_RAW/Training/',
+                    subject_list=[1,2,3,4,5,6,7,8,9,10],
+                    story_list = [2,4,5,8],
+                    y_directory='C:/Users/Diego Fabiano/Documents/OMG-FG-Challenge/data/Training/Annotations/',
+                    subjectActorBoth=0,
+                    reduce_factor=0.5,
+                    timesteps = 15):
+
+        # subjectActorBoth: 0 for subject only, 1 for actor only, 2 for both
+        subject_container,actor_container,y_container = read_raw_image_paths(data_directory,subject_list, story_list,y_directory)
+
+        sbj_images = [[[] for story in range(0,len(story_list))] for subject in range(0,len(subject_list))]
+        actor_images = [[[] for story in range(0,len(story_list))] for subject in range(0,len(subject_list))]
+
+        for subject in range(0,len(subject_list)):
+                print("Read subject ", subject)
+                for story in range(0,len(story_list)):
+                        print("Read story ", story)
+                        subject_container[subject][story] = subject_container[subject][story][0:int(len(subject_container[subject][story])*reduce_factor)]
+                        actor_container[subject][story] = actor_container[subject][story][0:int(len(actor_container[subject][story])*reduce_factor)]
+                        y_container[subject][story] = y_container[subject][story][0:int(len(y_container[subject][story])*reduce_factor)]
+
+                        for k in range(0,len(subject_container[subject][story])):
+                                if subjectActorBoth >= 1:
+                                        actor_images[subject][story].append(cv2.resize(cv2.imread(actor_container[subject][story][k][0]),(128,128)))
+                                if (subjectActorBoth == 0 or subjectActorBoth == 2):
+                                        sbj_images[subject][story].append(cv2.resize(cv2.imread(subject_container[subject][story][k][0]),(128,128)))
+        subject_ts = []
+        actor_ts = []
+        y = []
+        for subject in range(0,len(subject_list)):
+                for story in range(0,len(story_list)):
+                        for indx in range(0, len(actor_images[subject][story]) - timesteps):
+                            endSeq = indx + timesteps
+                            if subjectActorBoth == 0 or subjectActorBoth == 2:
+                                    subject_ts.append(sbj_images[subject][story][indx:endSeq])
+                            if subjectActorBoth >= 1:
+                                    actor_ts.append(actor_images[subject][story][indx:endSeq])
+                            y.append(y_container[subject][story][indx:endSeq])
+
+        if subjectActorBoth == 2:
+                return np.asarray(subject_ts), np.asarray(actor_ts), np.asarray(y)
+        if subjectActorBoth == 0:
+                return np.asarray(subject_ts), np.asarray(y)
+        if subjectActorBoth == 1:
+                return np.asarray(actor_ts), np.asarray(y)
+
+
 # for images
 def fusion(data_container):
    

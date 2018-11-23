@@ -1,5 +1,5 @@
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Flatten, BatchNormalization
+from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Flatten, BatchNormalization, ConvLSTM2D
 import operator
 from keras.optimizers import RMSprop, adam,adamax, Nadam, SGD
 from keras import backend as K
@@ -8,7 +8,6 @@ import cv2
 import numpy as np
 
 import matplotlib as mpl
-mpl.use('PDF')
 import matplotlib.pyplot as plt
 
 def imageLoader(files,batch_size=256):
@@ -126,6 +125,40 @@ def CreateRegressor(input_neurons, output_neurons,hidden_layers,learning_rate, o
     return model
 
 
+def CreateLSTMConv2DRegressor(shape, output_neurons, learning_rate, optimizer, kernel, initial_dimension, decreasing, return_sequence = True):
+    func = None
+    if decreasing:
+        func = operator.floordiv
+    else:
+        func = operator.mul
+
+    model = Sequential()
+
+    model.add(ConvLSTM2D(filters=initial_dimension, kernel_size=kernel, input_shape=shape,activation='relu', padding='same', return_sequences = return_sequence))
+    model.add(BatchNormalization())
+    next_dimension = func(initial_dimension, 2)
+
+    model.add(ConvLSTM2D(filters=next_dimension, kernel_size=kernel, activation='relu', padding='same', return_sequences = return_sequence))
+    model.add(BatchNormalization())
+    next_dimension = func(next_dimension, 2)
+
+    model.add(ConvLSTM2D(filters=next_dimension, kernel_size=kernel, activation='relu', padding='same', return_sequences = return_sequence))
+    model.add(BatchNormalization())
+    next_dimension = func(next_dimension, 2)
+
+    model.add(ConvLSTM2D(filters=next_dimension, kernel_size=kernel, activation='relu', padding='same', return_sequences = return_sequence))
+    model.add(BatchNormalization())
+    next_dimension = func(next_dimension, 2)
+
+    model.add(Dropout(0.5))
+    model.add(Flatten())
+    model.add(Dropout(0.5))
+    model.add(Dense(1, activation='linear'))
+    model.compile(optimizer = getOptimizer(optimizer, learning_rate), loss = ccc_loss, metrics = ['mse', 'accuracy', ccc, 'mae', ccc_loss])
+
+    return model
+
+
 def CreateConv2DRegressor(shape, output_neurons,learning_rate, optimizer,kernel,initial_dimention, decreasing):
     
     func = None
@@ -166,7 +199,7 @@ def getDeepFeatures(featureDetector,x):
 def RegressorPrediction(model,x):
     return model.predict(x)
 
-def graphTrainingData(history, imagePath='train_graph.png', metrics=['acc'], show = False):
+def graphTrainingData(history, imagePath='train_graph.png', show = False):
     """
     This function cretes a graph where the x axis is the epoch or training iteration, and 
     in the y axis we represent the metric speficied (by default, accuracy) of the model
