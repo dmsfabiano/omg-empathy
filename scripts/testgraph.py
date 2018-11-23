@@ -36,4 +36,4 @@ model.compile(optimizer=tf.keras.optimizers.Adam(lr=0.01),
 
 history = model.fit(x=ntrain, y=ntlabels, validation_data=(nvalidation, nvalidation_labels), batch_size=256, epochs=5)
 
-net.graphTrainingData(history, imagePath='train_graph.png', metrics=['acc', 'mean_squared_error'], show = True)
+net.graphTrainingData(history, imagePath='train_graph.png', show = True)

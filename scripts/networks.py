@@ -1,14 +1,13 @@
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Flatten, BatchNormalization
+from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Flatten, BatchNormalization, ConvLSTM2D
 import operator
-from keras.optimizers import RMSprop, adam,adamax, Nadam
+from keras.optimizers import RMSprop, adam,adamax, Nadam, SGD
 from keras import backend as K
 import tensorflow as tf
 import cv2
 import numpy as np
 
 import matplotlib as mpl
-mpl.use('PDF')
 import matplotlib.pyplot as plt
 
 def imageLoader(files,batch_size=256):
@@ -16,7 +15,7 @@ def imageLoader(files,batch_size=256):
     def loadImages(files):
         x = []    
         for file in files:
-            x.append(cv2.imread(file[0]))
+            x.append(cv2.imread(file[0][0]))
         return np.reshape(np.asarray(x), (len(files),256,256,3))
     
     def loadValues(values):
@@ -42,8 +41,8 @@ def imageLoader(files,batch_size=256):
 def ccc(y_true, y_pred):
     x = y_true
     y = y_pred
-    mx = K.mean(x)
-    my = K.mean(y)
+    mx = K.mean(x) + K.epsilon()
+    my = K.mean(y) + K.epsilon()
     xm, ym = x-mx, y-my
     
     r_num = K.sum(tf.multiply(xm,ym))
@@ -59,7 +58,6 @@ def ccc(y_true, y_pred):
     std_true_squared = K.square(K.std(x))
     
     denominator = tf.add(tf.add(std_predictions_squared,std_true_squared),mean_differences)
-    
     return numerator/denominator
 
 def focal_loss(y_true,y_pred,gamma=2, alpha=0.25):
@@ -88,7 +86,6 @@ def pearsonr(y_true,y_pred):
     r = K.maximum(K.minimum(r, 1.0), -1.0)
     return 1 - K.square(r)
 
-
 def unison_shuffle(data_container):
     p = np.random.permutation(len(data_container[0]))
     
@@ -98,14 +95,49 @@ def unison_shuffle(data_container):
 
 
 def getOptimizer(name,rate):
-    if name is 'adamax':
+    if name == 'adamax':
         return adamax(lr=rate)
-    elif name is 'adam':
+    elif name == 'adam':
         return adam(lr=rate)
-    elif name is 'nadam':
+    elif name == 'nadam':
         return Nadam(lr=rate)
+    elif name == 'sgd':
+        return SGD(lr=rate)
     else:
         return RMSprop(lr=rate)
+    
+def CreateLSTMConv2DRegressor(shape, output_neurons, learning_rate, optimizer, kernel, initial_dimension, decreasing, return_sequence = True):
+    func = None
+    if decreasing:
+        func = operator.floordiv
+    else:
+        func = operator.mul
+
+    model = Sequential()
+
+    model.add(ConvLSTM2D(filters=initial_dimension, kernel_size=kernel, input_shape=shape,activation='relu', padding='same', return_sequences = return_sequence))
+    model.add(BatchNormalization())
+    next_dimension = func(initial_dimension, 2)
+
+    model.add(ConvLSTM2D(filters=next_dimension, kernel_size=kernel, activation='relu', padding='same', return_sequences = return_sequence))
+    model.add(BatchNormalization())
+    next_dimension = func(next_dimension, 2)
+
+    model.add(ConvLSTM2D(filters=next_dimension, kernel_size=kernel, activation='relu', padding='same', return_sequences = return_sequence))
+    model.add(BatchNormalization())
+    next_dimension = func(next_dimension, 2)
+
+    model.add(ConvLSTM2D(filters=next_dimension, kernel_size=kernel, activation='relu', padding='same', return_sequences = return_sequence))
+    model.add(BatchNormalization())
+    next_dimension = func(next_dimension, 2)
+
+    model.add(Dropout(0.5))
+    model.add(Flatten())
+    model.add(Dropout(0.5))
+    model.add(Dense(1, activation='linear'))
+    model.compile(optimizer = getOptimizer(optimizer, learning_rate), loss = ccc_loss, metrics = ['mse', 'accuracy', ccc, 'mae', ccc_loss])
+
+    return model  
     
 def CreateRegressor(input_neurons, output_neurons,hidden_layers,learning_rate, optimizer,hidden_neurons):
 
@@ -119,13 +151,56 @@ def CreateRegressor(input_neurons, output_neurons,hidden_layers,learning_rate, o
     model.add(Dense(units = output_neurons, kernel_initializer = 'uniform',activation = 'relu'))
     model.add(Dense(1,activation='linear'))
 
-    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = ccc_loss, metrics = ['mse','accuracy',ccc, 'mae', pearsonr,ccc_loss])
+    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = 'mse', metrics = ['mse','accuracy',ccc, 'mae'])
             
     return model
 
 
 def CreateConv2DRegressor(shape, output_neurons,learning_rate, optimizer,kernel,initial_dimention, decreasing):
     
+    model = Sequential()
+    
+    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu',input_shape=shape))
+    model.add(BatchNormalization())    
+    model.add(Dropout(0.2))
+
+    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu'))
+    model.add(BatchNormalization())
+
+    model.add(MaxPooling2D(pool_size=(2,2), padding='same'))
+    initial_dimention *= 2
+
+
+    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu'))
+    model.add(BatchNormalization())    
+    model.add(Dropout(0.2))
+
+    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu'))
+    model.add(BatchNormalization())
+
+    model.add(MaxPooling2D(pool_size=(2,2), padding='same'))
+    initial_dimention *= 2
+
+    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu'))
+    model.add(BatchNormalization())    
+    model.add(Dropout(0.2))
+
+    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu'))
+    model.add(BatchNormalization())
+    model.add(Dropout(0.2))
+
+    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu'))
+    model.add(BatchNormalization())
+    
+    model.add(MaxPooling2D(pool_size=(2,2), padding='same'))
+
+    model.add(Flatten())
+    model.add(Dense(output_neurons, activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(output_neurons, activation='relu'))
+    model.add(Dense(1,activation='linear'))
+
+    '''
     func = None
     if decreasing:
         func = operator.floordiv
@@ -149,7 +224,8 @@ def CreateConv2DRegressor(shape, output_neurons,learning_rate, optimizer,kernel,
     model.add(Dense(output_neurons, activation='relu'))
     model.add(Dropout(0.5))
     model.add(Dense(1,activation='linear'))
-    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = ccc_loss, metrics =  ['mse','accuracy',ccc, 'mae',ccc_loss])
+    '''
+    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = ccc_loss, metrics =  ['mse','accuracy',ccc,'mae'])
 
     return model
 
@@ -164,7 +240,7 @@ def getDeepFeatures(featureDetector,x):
 def RegressorPrediction(model,x):
     return model.predict(x)
 
-def graphTrainingData(history, imagePath='train_graph.png', metrics=['acc'], show = False):
+def graphTrainingData(history, imagePath='train_graph.png', show = False):
     """
     This function cretes a graph where the x axis is the epoch or training iteration, and 
     in the y axis we represent the metric speficied (by default, accuracy) of the model
@@ -176,6 +252,11 @@ def graphTrainingData(history, imagePath='train_graph.png', metrics=['acc'], sho
     metric: metric to graph or plot
     """
     fig = plt.figure()
+    metrics = []
+    for metric in history.history:
+        if not metric.startswith("val_"):
+            metrics.append(metric)
+            print(metric)
     nrows = max(1, len(metrics)//3)
     ncols = min(3, len(metrics))
     print('Number of rows: ', nrows)
