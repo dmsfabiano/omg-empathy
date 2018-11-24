@@ -6,7 +6,7 @@ from scipy.io.wavfile import read
 from multiprocessing import Pool
 import slidingwindow
 
-def writeModelOutput(path, y_pred, y_true, subject, story):
+def writeModelOutput(path, y_pred, subject, story):
     file_path = path + 'Subject_' + str(subject) + '_Story_' + '1' + '.csv'
     with open(file_path, 'w') as file:
         file.write('valence\n')

@@ -73,7 +73,7 @@ def calculateCCC(validationFolder, modelOutputFolder):
 
         dataYPred = pandas.read_csv(modelOutputFolder+"/"+modelOutputfolder[fileIndex], header=0, sep=",")
 
-        dataYValence = dataY["valence"]
+        dataYValence = dataY["valence"]        
         dataYPredValence = dataYPred["valence"]
 
         valenceCCC, vcor = ccc(dataYValence, dataYPredValence)

@@ -1,5 +1,5 @@
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Flatten, BatchNormalization, ConvLSTM2D
+from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Flatten, BatchNormalization, ConvLSTM2D, MaxPooling3D
 import operator
 from keras.optimizers import RMSprop, adam,adamax, Nadam, SGD
 from keras import backend as K
@@ -10,13 +10,26 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-def imageLoader(files,batch_size=256):
+def imageLoader(files,batch_size=256,time=None):
     
     def loadImages(files):
         x = []    
         for file in files:
             x.append(cv2.imread(file[0][0]))
-        return np.reshape(np.asarray(x), (len(files),256,256,3))
+        if time is not None:
+            y = [[] for _ in x]
+            for i in range(1,len(x)+1):
+                count = 1
+                while count <= time:
+                    if i - count >= 0:
+                        y[i-1].append(x[i-count])
+                    else:
+                        y[i-1].append(x[0])
+                    count += 1
+        if time is None:
+            return np.reshape(np.asarray(x), (len(files),256,256,3))
+        else:
+            return np.reshape(np.asarray(y), (len(files),time,256,256,3))
     
     def loadValues(values):
         y = []    
@@ -102,7 +115,7 @@ def getOptimizer(name,rate):
     elif name == 'nadam':
         return Nadam(lr=rate)
     elif name == 'sgd':
-        return SGD(lr=rate)
+        return SGD(lr=rate, momentum=0.9, nesterov=True)
     else:
         return RMSprop(lr=rate)
     
@@ -115,27 +128,29 @@ def CreateLSTMConv2DRegressor(shape, output_neurons, learning_rate, optimizer, k
 
     model = Sequential()
 
-    model.add(ConvLSTM2D(filters=initial_dimension, kernel_size=kernel, input_shape=shape,activation='relu', padding='same', return_sequences = return_sequence))
+    model.add(ConvLSTM2D(filters=initial_dimension, kernel_size=kernel, input_shape=shape,activation='relu', padding='valid', return_sequences = return_sequence))
     model.add(BatchNormalization())
+    
+    model.add(Dropout(0.2))
+    
+    model.add(ConvLSTM2D(filters=initial_dimension, kernel_size=kernel, activation='relu', padding='valid', return_sequences = return_sequence))
+    model.add(BatchNormalization())
+    model.add(MaxPooling3D(pool_size=(2,2,2), padding='same'))
     next_dimension = func(initial_dimension, 2)
+    
+    model.add(ConvLSTM2D(filters=next_dimension, kernel_size=kernel, activation='relu', padding='same', return_sequences = return_sequence))
+    model.add(BatchNormalization())
 
     model.add(ConvLSTM2D(filters=next_dimension, kernel_size=kernel, activation='relu', padding='same', return_sequences = return_sequence))
     model.add(BatchNormalization())
-    next_dimension = func(next_dimension, 2)
+    model.add(MaxPooling3D(pool_size=(2,2,2), padding='same'))
 
-    model.add(ConvLSTM2D(filters=next_dimension, kernel_size=kernel, activation='relu', padding='same', return_sequences = return_sequence))
-    model.add(BatchNormalization())
-    next_dimension = func(next_dimension, 2)
-
-    model.add(ConvLSTM2D(filters=next_dimension, kernel_size=kernel, activation='relu', padding='same', return_sequences = return_sequence))
-    model.add(BatchNormalization())
-    next_dimension = func(next_dimension, 2)
-
-    model.add(Dropout(0.5))
     model.add(Flatten())
+    model.add(Dense(100,activation='relu'))
     model.add(Dropout(0.5))
-    model.add(Dense(1, activation='linear'))
-    model.compile(optimizer = getOptimizer(optimizer, learning_rate), loss = ccc_loss, metrics = ['mse', 'accuracy', ccc, 'mae', ccc_loss])
+    model.add(Dense(1,activation='linear'))
+    
+    model.compile(optimizer = getOptimizer(optimizer, learning_rate), loss = 'mse', metrics = ['mse', 'accuracy', ccc, 'mae', ccc_loss])
 
     return model  
     
@@ -159,48 +174,6 @@ def CreateRegressor(input_neurons, output_neurons,hidden_layers,learning_rate, o
 def CreateConv2DRegressor(shape, output_neurons,learning_rate, optimizer,kernel,initial_dimention, decreasing):
     
     model = Sequential()
-    
-    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu',input_shape=shape))
-    model.add(BatchNormalization())    
-    model.add(Dropout(0.2))
-
-    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu'))
-    model.add(BatchNormalization())
-
-    model.add(MaxPooling2D(pool_size=(2,2), padding='same'))
-    initial_dimention *= 2
-
-
-    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu'))
-    model.add(BatchNormalization())    
-    model.add(Dropout(0.2))
-
-    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu'))
-    model.add(BatchNormalization())
-
-    model.add(MaxPooling2D(pool_size=(2,2), padding='same'))
-    initial_dimention *= 2
-
-    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu'))
-    model.add(BatchNormalization())    
-    model.add(Dropout(0.2))
-
-    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu'))
-    model.add(BatchNormalization())
-    model.add(Dropout(0.2))
-
-    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu'))
-    model.add(BatchNormalization())
-    
-    model.add(MaxPooling2D(pool_size=(2,2), padding='same'))
-
-    model.add(Flatten())
-    model.add(Dense(output_neurons, activation='relu'))
-    model.add(Dropout(0.5))
-    model.add(Dense(output_neurons, activation='relu'))
-    model.add(Dense(1,activation='linear'))
-
-    '''
     func = None
     if decreasing:
         func = operator.floordiv
@@ -224,8 +197,7 @@ def CreateConv2DRegressor(shape, output_neurons,learning_rate, optimizer,kernel,
     model.add(Dense(output_neurons, activation='relu'))
     model.add(Dropout(0.5))
     model.add(Dense(1,activation='linear'))
-    '''
-    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = ccc_loss, metrics =  ['mse','accuracy',ccc,'mae'])
+    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = 'mse', metrics =  ['mse','accuracy',ccc,'mae'])
 
     return model
 
