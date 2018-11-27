@@ -1,5 +1,5 @@
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Flatten, BatchNormalization, ConvLSTM2D, MaxPooling3D, Input, Conv3D
+from keras.layers import Reshape, Dense, Dropout, Conv2D, MaxPooling2D, Flatten, BatchNormalization, ConvLSTM2D, MaxPooling3D, Input, Conv3D
 import operator
 from keras.optimizers import RMSprop, adam,adamax, Nadam, SGD
 from keras import backend as K
@@ -193,6 +193,8 @@ def createCrossChannel(batch_size, initial_filter_value_x, initial_filter_value_
 	#CHANNEL MERGE
 
 	merged_channel = keras.layers.concatenate([cross_channel_x, cross_channel_y], axis=-1)
+        merged_channel = Reshape((2,10,10), input_shape=(2,100))(merged_channel)
+        merged_channel = Conv3D(filters=8, kernel_size=3, padding='same')(merged_channel)
 
 	# END CHANNEL MERGE
 
