@@ -13,9 +13,11 @@ using namespace std;
 using namespace cv;
 using namespace cv::face;
 
-const string trainingOutputPath = "../../data/faces/Training/"s;
-const string validationOutputPath = "../../data/faces/Validation/"s;
-array<string,2> outputPaths{ trainingOutputPath, validationOutputPath };
+//const string trainingOutputPath = "../../data/faces/Training/"s;
+//const string validationOutputPath = "../../data/faces/Validation/"s;
+//array<string,2> outputPaths{ trainingOutputPath, validationOutputPath };
+const string outputPath = "../../data/Testing/faces/"s;
+array<string, 2> outputPaths{ outputPath };
 
 const string face_cascade_name = "./haarcascade_frontalface_default.xml"s;
 CascadeClassifier face_cascade;
@@ -33,8 +35,12 @@ vector<fs::path> videoFilenames(const string& path) {
 	return filenames;
 }
 
-pair<vector<fs::path>, vector<fs::path>> trainingAndTestingFiles() {
-	return { videoFilenames("../../data/Training/Videos/"), videoFilenames("../../data/Validation/Videos/") };
+//pair<vector<fs::path>, vector<fs::path>> trainingAndTestingFiles() {
+//	return { videoFilenames("../../data/Testing/Videos/") };
+//}
+vector<fs::path> trainingAndTestingFiles() {
+	//return { videoFilenames("../../data/Training/Videos/"), videoFilenames("../../data/Validation/Videos/") };
+	return videoFilenames("../../data/Testing/Videos/");
 }
 
 Mat preprocess(Mat&, const bool = true);
@@ -53,7 +59,7 @@ vector<Mat> readVideo(const string& path, const bool subject, bool& flag) {
 		}
 		++i;
 	}
-	if(!success) { flag = false; } 
+	if (!success) { flag = false; }
 	return frames;
 }
 
@@ -103,26 +109,28 @@ vector<vector<Point2f>> detectFacesAndLandmarks(vector<Mat>& frames, CascadeClas
 	for (auto& frame : frames) {
 		auto bounds = detectFace(frame, faceClassifier);
 		if (bounds.empty()) {
-			if(i == failure_count) {
+			if (i == failure_count) {
 				++failure_count;
 				++num_errors;
-			} else {
+			}
+			else {
 				landmarks.push_back(landmarks.back());
 			}
 		}
 		else {
 			if (facemark->fit(frame, bounds, landmark)) {
 				landmarks.push_back(landmark.at(0));
-				while(failure_count > 0) {
+				while (failure_count > 0) {
 					landmarks.insert(landmarks.begin(), landmarks.back());
 					--failure_count;
 				}
 			}
 			else {
-				if(i == failure_count) {
+				if (i == failure_count) {
 					++failure_count;
 					++num_errors;
-				} else {
+				}
+				else {
 					landmarks.push_back(landmarks.back());
 				}
 			}
@@ -135,23 +143,26 @@ vector<vector<Point2f>> detectFacesAndLandmarks(vector<Mat>& frames, CascadeClas
 int main(int argc, char** argv) {
 	face_cascade.load(face_cascade_name);
 	facemark->loadModel(landmark_name);
-	const auto&[train, test] = trainingAndTestingFiles();
-	array<vector<fs::path>,2> paths{ train, test };
-	ofstream error_file("../../data/faces/errors.txt", ios::app);
+	//const auto&[train, test] = trainingAndTestingFiles();
+	const auto& test = trainingAndTestingFiles();
+	//array<vector<fs::path>, 2> paths{ train, test };
+	array<vector<fs::path>, 1> paths{ test };
+	ofstream error_file("../../data/Testing/faces/errors.txt", ios::app);
 	for (auto i = 0; i < 2; ++i) {
 		bool subject;
 		if (i == 0) { subject = true; }
 		else { subject = false; }
 		string end_string = ".landmarks.txt";
 		if (!subject) { end_string = ".landmarks_actor.txt"; }
-		for (auto j = 0; j < 2; ++j) {
+		//for (auto j = 0; j < 2; ++j) {
+		for (auto j = 0; j < 1; ++j) {
 			double total_errors = 0.0;
 			long iteration_number = 0;
 			for (const auto& path : paths.at(j)) {
 				cout << "Reading Video at path: " << path.string() << '\n';
 				bool flag = true;
 				int idx = 0;
-				while(flag) {
+				while (flag) {
 					auto frames = readVideo(path.string(), subject, flag);
 					iteration_number += frames.size();
 					long error_count = 0;

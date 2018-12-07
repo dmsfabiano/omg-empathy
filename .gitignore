@@ -34,3 +34,5 @@ data/audio/*
 data/Visualization/Validation/*
 data/Visualization/Training/*
 data/spectrograms/*
+data/Testing/*
+data/temp.mp4

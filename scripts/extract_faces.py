@@ -39,7 +39,8 @@ def extractFramesFromVideo(path,savePath, faceDetectorPrecision,
                            missedFacesDirectory='D:\\Neil_TFS\\AR Emotion Research\\OMG-Empathy-Challenge\\data\\faces\\MissedFaces.txt', 
                            size=128):
     videos = os.listdir(path + "/")
-    haarcascade='H:\\haarcascade_frontalface_default.xml'
+    #haarcascade='H:\\haarcascade_frontalface_default.xml'
+    haarcascade='D:\\Neil_TFS\\AR Emotion Research\\OMG-Empathy-Challenge\\omg-empathy\\scripts\\c++-scripts\\haarcascade_frontalface_default.xml'
     cascade = cv2.CascadeClassifier(haarcascade)
     lCountMissedFaces = 0
     fileMissedFaces = open(missedFacesDirectory, "w")
@@ -52,7 +53,7 @@ def extractFramesFromVideo(path,savePath, faceDetectorPrecision,
         
 
         #copyTarget = "/data/datasets/OMG-Empathy/clip1.mp4"
-        copyTarget = "D:/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/data/temp.mp4"
+        copyTarget = "D:/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/temp.mp4"
         print ("--- Copying file:", videoPath + " ...")
         copyfile(videoPath, copyTarget)
         cap = cv2.VideoCapture(copyTarget)
@@ -100,19 +101,21 @@ if __name__ == "__main__":
 
     #Path where the videos are
     #path ="/data/videos/Training/"
-    path = "D:/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/data/Training/Videos"
+    #path = "D:/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/data/Training/Videos"
+    path = "D:/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/Testing/Videos"
 
     #Path where the faces will be saved
     #savePath ="/data/faces/Training/"
-    savePath = "D:/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/data/faces/Training"
-
+    #savePath = "D:/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/data/faces/Training"
+    savePath = "D:/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/Testing/faces"
+    
     # If 1, the face detector will act upon each of the frames. If 1000, the face detector update its position every 100 frames.
     faceDetectorPrecision = 3
 
     detector = dlib.get_frontal_face_detector()
 
-    extractFramesFromVideo(path, savePath, faceDetectorPrecision)
+    extractFramesFromVideo(path, savePath, faceDetectorPrecision, missedFacesDirectory='D:\\Neil_TFS\\AR Emotion Research\\OMG-Empathy-Challenge\\omg-empathy\\data\\Testing\\MissedFaces.txt', size=256)
 
-    path = "D:/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/data/Validation/Videos"
-    savePath = "D:/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/data/faces/Validation"
-    extractFramesFromVideo(path, savePath, faceDetectorPrecision)
+    #path = "D:/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/data/Validation/Videos"
+    #savePath = "D:/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/data/faces/Validation"
+    #extractFramesFromVideo(path, savePath, faceDetectorPrecision)
