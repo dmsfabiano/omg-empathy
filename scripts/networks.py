@@ -1,8 +1,10 @@
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Flatten, BatchNormalization, ConvLSTM2D
+from keras.layers import Reshape, Dense, Dropout, Conv2D, MaxPooling2D, Flatten, BatchNormalization, ConvLSTM2D, MaxPooling3D, Input, Conv3D
 import operator
 from keras.optimizers import RMSprop, adam,adamax, Nadam, SGD
 from keras import backend as K
+from keras.applications import Xception
+from keras.utils import multi_gpu_model
 import tensorflow as tf
 import cv2
 import numpy as np
@@ -10,13 +12,26 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-def imageLoader(files,batch_size=256):
+def imageLoader(files,batch_size=256,time=None):
     
     def loadImages(files):
         x = []    
         for file in files:
             x.append(cv2.imread(file[0][0]))
-        return np.reshape(np.asarray(x), (len(files),256,256,3))
+        if time is not None:
+            y = [[] for _ in x]
+            for i in range(1,len(x)+1):
+                count = 1
+                while count <= time:
+                    if i - count >= 0:
+                        y[i-1].append(x[i-count])
+                    else:
+                        y[i-1].append(x[0])
+                    count += 1
+        if time is None:
+            return np.reshape(np.asarray(x), (len(files),256,256,3))
+        else:
+            return np.reshape(np.asarray(y), (len(files),time,256,256,3))
     
     def loadValues(values):
         y = []    
@@ -102,10 +117,125 @@ def getOptimizer(name,rate):
     elif name == 'nadam':
         return Nadam(lr=rate)
     elif name == 'sgd':
-        return SGD(lr=rate)
+        return SGD(lr=rate, momentum=0.9, nesterov=True)
     else:
         return RMSprop(lr=rate)
-    
+
+def createCrossChannel(batch_size, initial_filter_value_x, initial_filter_value_y, out_neurons, time):
+
+	# INITIAL FACE CHANNEL
+
+	input_x = Input(shape=(batch_size,time,128,128))
+	x = Conv3D(filters=initial_filter_value, kernel_size=3, activation='relu')(input_x)
+	x = BatchNormalization()(x)
+
+	x = Conv3D(filters=initial_filter_value, kernel_size=3, activation='relu')(x)
+	x = BatchNormalization()(x)
+
+	x = MaxPooling3D(pool_size=(2,2,2))(x)
+	x = Dropout(0.2)(x)
+
+	x = Conv3D(filters=initial_filter_value, kernel_size=3, activation='relu')(x)
+	x = BatchNormalization()(x)
+
+	x = Conv3D(filters=initial_filter_value, kernel_size=3, activation='relu')(x)
+	x = BatchNormalization()(x)
+
+	x = MaxPooling3D(pool_size=(2,2,2))(x)
+	x = Dropout(0.2)(x)
+
+	initial_filter_value *= 2
+
+	x = Conv3D(filters=initial_filter_value, kernel_size=3, activation='relu')(x)
+	x = BatchNormalization()(x)
+
+	x = Conv3D(filters=initial_filter_value, kernel_size=3, activation='relu')(x)
+	x = BatchNormalization()(x)
+	
+	x = Conv3D(filters=initial_filter_value, kernel_size=3, activation='relu')(x)
+	x = BatchNormalization()(x)
+
+	x = MaxPooling3D(pool_size=(2,2,2))(x)
+	x = Dropout(0.2)(x)
+
+    	x = Conv3D(filters=initial_filter_value, kernel_size=3, activation='relu')(x)
+	x = BatchNormalization()(x)
+
+	# END INITIAL FACE CHANNEL
+
+	# INITIAL AUDIO CHANNEL
+
+	input_y = Input(shape=(batch_size,26,26))
+	y = Conv1D(filters=initial_filter_value_y, kernel_size=3, activation='relu')(input_y)
+	y = MaxPooling1D(pool_size=2)
+	
+	# END INITIAL AUDIO CHANNEL
+
+	# CREATE CHANNEL FOR IMAGE
+
+	cross_channel_x = x
+
+	Flatten()(cross_channel_x)
+	Dense(out_neurons)(cross_channel_x)
+	
+
+	# END CHANNEL
+
+	# CREATE CHANNEL FOR AUDIO
+
+	cross_channel_y = y
+
+	Flatten()(cross_channel_y)
+	Dense(out_neurons)(cross_channel_y)
+
+	# END CHANNEL FOR AUDIO
+
+	#CHANNEL MERGE
+
+	merged_channel = keras.layers.concatenate([cross_channel_x, cross_channel_y], axis=-1)
+        merged_channel = Reshape((2,10,10), input_shape=(2,100))(merged_channel)
+        merged_channel = Conv3D(filters=8, kernel_size=3, padding='same')(merged_channel)
+
+	# END CHANNEL MERGE
+
+	# START END OF VISUAL
+
+	x = Conv3D(filters=initial_filter_value, kernel_size=3, activation='relu')(x)
+	x = BatchNormalization()(x)
+	
+	x = Conv3D(filters=initial_filter_value, kernel_size=3, activation='relu')(x)
+	x = BatchNormalization()(x)
+
+	x = MaxPooling3D(pool_size=(2,2,2))(x)
+	x = Dropout(0.2)(x)
+
+	x = Flatten()(x)
+	x = Dense(out_neurons, activation='relu')(x)
+	x = Dropout(0.5)(x)
+	x = Dense(out_neurons, activation='relu')(x)
+	x = Dropout(0.5)(x)
+	
+	visual_channel = Dense(time, activation='linear')(x)
+	
+	# FINISH VISUAL
+
+	# START END OF AUDIO
+
+	y = Conv1D(filters=initial_filter_value_y*2, kernel_size=3, activation='relu')(y)
+	y = MaxPooling1D(pool_size=2)
+	
+	y = Conv1D(filters=initial_filter_value_y, kernel_size=3, activation='relu')(y)
+	y = MaxPooling1D(pool_size=2)
+
+	y = Flatten()(y)
+	y = Dense(out_neurons, activation='relu')(y)
+	y = Dropout(0.5)(y)
+	
+	audio_channel = Dense(time, activation='linear')(y)
+	
+	# FINISH AUDIO
+
+
 def CreateLSTMConv2DRegressor(shape, output_neurons, learning_rate, optimizer, kernel, initial_dimension, decreasing, return_sequence = True):
     func = None
     if decreasing:
@@ -115,28 +245,32 @@ def CreateLSTMConv2DRegressor(shape, output_neurons, learning_rate, optimizer, k
 
     model = Sequential()
 
-    model.add(ConvLSTM2D(filters=initial_dimension, kernel_size=kernel, input_shape=shape,activation='relu', padding='same', return_sequences = return_sequence))
+    model.add(ConvLSTM2D(filters=initial_dimension, kernel_size=kernel, input_shape=shape,activation='relu', padding='valid', return_sequences = return_sequence))
     model.add(BatchNormalization())
+    
+    model.add(Dropout(0.2))
+    
+    model.add(ConvLSTM2D(filters=initial_dimension, kernel_size=kernel, activation='relu', padding='valid', return_sequences = return_sequence))
+    model.add(BatchNormalization())
+    model.add(MaxPooling3D(pool_size=(2,2,2), padding='same'))
     next_dimension = func(initial_dimension, 2)
+    
+    model.add(ConvLSTM2D(filters=next_dimension, kernel_size=kernel, activation='relu', padding='same', return_sequences = return_sequence))
+    model.add(BatchNormalization())
+
+    model.add(Dropout(0.2))
 
     model.add(ConvLSTM2D(filters=next_dimension, kernel_size=kernel, activation='relu', padding='same', return_sequences = return_sequence))
     model.add(BatchNormalization())
-    next_dimension = func(next_dimension, 2)
+    model.add(MaxPooling3D(pool_size=(2,2,2), padding='same'))
 
-    model.add(ConvLSTM2D(filters=next_dimension, kernel_size=kernel, activation='relu', padding='same', return_sequences = return_sequence))
-    model.add(BatchNormalization())
-    next_dimension = func(next_dimension, 2)
-
-    model.add(ConvLSTM2D(filters=next_dimension, kernel_size=kernel, activation='relu', padding='same', return_sequences = return_sequence))
-    model.add(BatchNormalization())
-    next_dimension = func(next_dimension, 2)
-
-    model.add(Dropout(0.5))
     model.add(Flatten())
+    model.add(Dense(output_neurons,activation='relu'))
     model.add(Dropout(0.5))
-    model.add(Dense(1, activation='linear'))
-    model.compile(optimizer = getOptimizer(optimizer, learning_rate), loss = ccc_loss, metrics = ['mse', 'accuracy', ccc, 'mae', ccc_loss])
-
+    model.add(Dense(1,activation='linear'))
+    
+    model = multi_gpu_model(model,gpus=8)
+    model.compile(optimizer = getOptimizer(optimizer, learning_rate), loss = 'mse', metrics = ['mse', 'accuracy', ccc, 'mae', ccc_loss])
     return model  
     
 def CreateRegressor(input_neurons, output_neurons,hidden_layers,learning_rate, optimizer,hidden_neurons):
@@ -151,6 +285,7 @@ def CreateRegressor(input_neurons, output_neurons,hidden_layers,learning_rate, o
     model.add(Dense(units = output_neurons, kernel_initializer = 'uniform',activation = 'relu'))
     model.add(Dense(1,activation='linear'))
 
+    model = multi_gpu_model(model,gpus=8)
     model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = 'mse', metrics = ['mse','accuracy',ccc, 'mae'])
             
     return model
@@ -159,48 +294,6 @@ def CreateRegressor(input_neurons, output_neurons,hidden_layers,learning_rate, o
 def CreateConv2DRegressor(shape, output_neurons,learning_rate, optimizer,kernel,initial_dimention, decreasing):
     
     model = Sequential()
-    
-    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu',input_shape=shape))
-    model.add(BatchNormalization())    
-    model.add(Dropout(0.2))
-
-    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu'))
-    model.add(BatchNormalization())
-
-    model.add(MaxPooling2D(pool_size=(2,2), padding='same'))
-    initial_dimention *= 2
-
-
-    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu'))
-    model.add(BatchNormalization())    
-    model.add(Dropout(0.2))
-
-    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu'))
-    model.add(BatchNormalization())
-
-    model.add(MaxPooling2D(pool_size=(2,2), padding='same'))
-    initial_dimention *= 2
-
-    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu'))
-    model.add(BatchNormalization())    
-    model.add(Dropout(0.2))
-
-    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu'))
-    model.add(BatchNormalization())
-    model.add(Dropout(0.2))
-
-    model.add(Conv2D(initial_dimention, kernel_size=kernel, activation='relu'))
-    model.add(BatchNormalization())
-    
-    model.add(MaxPooling2D(pool_size=(2,2), padding='same'))
-
-    model.add(Flatten())
-    model.add(Dense(output_neurons, activation='relu'))
-    model.add(Dropout(0.5))
-    model.add(Dense(output_neurons, activation='relu'))
-    model.add(Dense(1,activation='linear'))
-
-    '''
     func = None
     if decreasing:
         func = operator.floordiv
@@ -224,9 +317,10 @@ def CreateConv2DRegressor(shape, output_neurons,learning_rate, optimizer,kernel,
     model.add(Dense(output_neurons, activation='relu'))
     model.add(Dropout(0.5))
     model.add(Dense(1,activation='linear'))
-    '''
-    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = ccc_loss, metrics =  ['mse','accuracy',ccc,'mae'])
-
+    
+    model = multi_gpu_model(model,gpus=8)
+    modea.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = 'mse', metrics =  ['mse','accuracy',ccc,'mae'])
+    
     return model
 
 def trainRegressor(model,x,y,epochs,batches,verb,calls,val_data):
