@@ -64,7 +64,7 @@ def extractFramesFromVideo(path,savePath, faceDetectorPrecision,
         imageNumber = 0
         print ("- Extracting Faces:", str(totalFrames) + " Frames ...")
 
-        savePathSubject = savePath + "/" + video + "/Subject/"
+        savePathSubject = savePath + "/" + video + "/Actor/"
 
         if not os.path.exists(savePathSubject):
             os.makedirs(savePathSubject)
@@ -72,8 +72,8 @@ def extractFramesFromVideo(path,savePath, faceDetectorPrecision,
                     check, img = cap.read()
                     if img is not None:
                         #Extract subject faces
-                        imageSubject = img[0:720, 1080:2560]
-
+                        #imageSubject = img[0:720, 1080:2560]
+                        imageSubject = img[0:720, 0:1080]
                         try:                            
                             # detect subject faces
                             _, faceFound = DetectFace(cascade, imageSubject)
@@ -114,7 +114,7 @@ if __name__ == "__main__":
 
     detector = dlib.get_frontal_face_detector()
 
-    extractFramesFromVideo(path, savePath, faceDetectorPrecision, missedFacesDirectory='D:\\Neil_TFS\\AR Emotion Research\\OMG-Empathy-Challenge\\omg-empathy\\data\\Testing\\MissedFaces.txt', size=256)
+    extractFramesFromVideo(path, savePath, faceDetectorPrecision, missedFacesDirectory='D:\\Neil_TFS\\AR Emotion Research\\OMG-Empathy-Challenge\\omg-empathy\\data\\Testing\\MissedFacesActor.txt', size=256)
 
     #path = "D:/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/data/Validation/Videos"
     #savePath = "D:/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/data/faces/Validation"

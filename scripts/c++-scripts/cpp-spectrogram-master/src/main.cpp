@@ -133,15 +133,15 @@ int main(int argc, const char *argv[])
 	try {
 		std::thread training(
 			createSpectrographsParallel,
-			std::move("/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio-split/Training/"),
-			std::move("/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/spectrograms/Training/")
+			std::move("/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio-split-1-sec/Training/"),
+			std::move("/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/spectrograms-1-sec/Training/")
 		);
 		std::thread testing(
 			createSpectrographsParallel,
-			std::move("/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio-split/Validation/"),
-			std::move("/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/spectrograms/Validation/")
+			std::move("/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio-split-1-sec/Validation/"),
+			std::move("/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/spectrograms-1-sec/Validation/")
 		);
-		// synchronize threads
+		//synchronize threads
 		training.join();
 		testing.join();
 	}
