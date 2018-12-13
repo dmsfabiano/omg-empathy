@@ -16,7 +16,8 @@ from tqdm import tqdm
 def splitAudio(path, savePath):
     audios = os.listdir(path)
     #stepSize = 40
-    stepSize = 40 * 25
+    #stepSize = 40 * 25
+    stepSize = 40 * 25 / 4
     for originalAudio in tqdm(audios):
         if originalAudio.endswith('.wav'):
 		    audioPath = path + "/" + originalAudio
@@ -41,7 +42,7 @@ if __name__ == "__main__":
     # Path where the audios will be saved
     #savePath ="/data/audio/Validation/"
     #savePath = "D:\\Neil_TFS\\AR Emotion Research\\OMG-Empathy-Challenge\\omg-empathy\\data\\audio-reduced\\Training\\"
-    savePath = '/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio-split-1-sec/Training/'
+    savePath = '/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio-split-250-ms/Training/'
     #savePath = "/media/neil/30CA58BFCA588350/data/audio-reduced/Training/"
     #savePath = "../data/audio/Validation"
 
@@ -49,5 +50,10 @@ if __name__ == "__main__":
 
     print('Starting splitting Validation audio')
     path = '/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio/Validation/'
-    savePath = '/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio-split-1-sec/Validation/'
+    savePath = '/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio-split-250-ms/Validation/'
+    splitAudio(path,savePath)
+
+    print('Starting splitting Testing audio')
+    path = '/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/Testing/audio/'
+    savePath = '/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio-split-250-ms/Testing/'
     splitAudio(path,savePath)

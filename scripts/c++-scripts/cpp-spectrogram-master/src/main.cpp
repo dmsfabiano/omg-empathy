@@ -133,16 +133,22 @@ int main(int argc, const char *argv[])
 	try {
 		std::thread training(
 			createSpectrographsParallel,
-			std::move("/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio-split-1-sec/Training/"),
-			std::move("/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/spectrograms-1-sec/Training/")
+			std::move("/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio-split-250-ms/Training/"),
+			std::move("/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/spectrograms-250-ms/Training/")
+		);
+		std::thread validation(
+			createSpectrographsParallel,
+			std::move("/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio-split-250-ms/Validation/"),
+			std::move("/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/spectrograms-250-ms/Validation/")
 		);
 		std::thread testing(
 			createSpectrographsParallel,
-			std::move("/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio-split-1-sec/Validation/"),
-			std::move("/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/spectrograms-1-sec/Validation/")
+			std::move("/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio-split-250-ms/Testing/"),
+			std::move("/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/spectrograms-250-ms/Testing/")
 		);
 		//synchronize threads
 		training.join();
+		validation.join();
 		testing.join();
 	}
 	catch (const std::exception & e)
