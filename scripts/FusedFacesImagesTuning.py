@@ -19,7 +19,7 @@ def getData(subject_list,story_list, directory):
 train_sbj_list = [1,2,3,4,5,6,7,8,9,10]
 train_story_list = [2,4,5,8]
 validation_story_list = [1]
-test_story_list =  [3,6,7,9,10]
+test_story_list =  [3,6,7]
 
 print('Starting!')
 sys.stdout.flush()
@@ -58,11 +58,11 @@ val_audio_x, _ = fp.read_raw_images_by_story(data_directory='../data/spectrogram
 print('Validation Loaded!')
 sys.stdout.flush()
 
-test_subject_x, test_actor_x, _ = fp.read_raw_images_by_story(data_directory='../data/OriginalImages/Testing/',
+test_subject_x, _ = fp.read_raw_images_by_story(data_directory='../data/OriginalImages/Testing/',
                                              subject_list=[1,2,3,4,5,6,7,8,9,10],
                                              story_list = test_story_list,
                                              y_directory=None,
-                                             subjectActorBoth=2,
+                                             subjectActorBoth=0,
                                              reduce_factor=1)
 
 test_audio_x, _ = fp.read_raw_images_by_story(data_directory='../data/spectrograms-1-sec/Testing/',
