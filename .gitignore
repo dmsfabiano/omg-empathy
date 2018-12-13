@@ -37,3 +37,7 @@ data/Visualization/Training/*
 data/spectrograms/*
 data/Testing/*
 data/temp.mp4
+data/OriginalImages/*
+data/audio-split*
+data/spectrograms*
+/scripts/c++-scripts/cpp-spectrogram-master/src/*.out

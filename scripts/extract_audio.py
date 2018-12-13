@@ -45,20 +45,20 @@ if __name__ == "__main__":
     # Path where the videos are
     #path = "/data/Validation/Videos/"
     #path = "D:\\Neil_TFS\\AR Emotion Research\\OMG-Empathy-Challenge\\omg-empathy\\data\\Training\\Videos\\"
-    path = '/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/Training/Videos/'
+    path = '/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/Testing/Videos/'
     #path = "/media/neil/30CA58BFCA588350/data/Training/Videos/"
     #path = "../data/Validation/Videos"
 
     # Path where the audios will be saved
     #savePath ="/data/audio/Validation/"
     #savePath = "D:\\Neil_TFS\\AR Emotion Research\\OMG-Empathy-Challenge\\omg-empathy\\data\\audio-reduced\\Training\\"
-    savePath = '/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio/Training/'
+    savePath = '/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/Testing/audio/'
     #savePath = "/media/neil/30CA58BFCA588350/data/audio-reduced/Training/"
     #savePath = "../data/audio/Validation"
 
     extractAudio(path,savePath)
 
-    print('Starting extracting Validation audio')
-    path = '/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/Validation/Videos/'
-    savePath = '/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio/Validation/'
-    extractAudio(path,savePath)
+    #print('Starting extracting Validation audio')
+    #path = '/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/Validation/Videos/'
+    #savePath = '/mnt/d/Neil_TFS/AR Emotion Research/OMG-Empathy-Challenge/omg-empathy/data/audio/Validation/'
+    #extractAudio(path,savePath)

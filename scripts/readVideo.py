@@ -39,7 +39,7 @@ def face_detect(frame, cascade, previous_face, actor):
 
 
 def read_frames(filename, batch_size=256, cObj=None, previous_face_wrapper=None):
-	cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+	cascade = cv2.CascadeClassifier('./c++-scripts/haarcascade_frontalface_default.xml')
 	cap = cv2.VideoCapture(filename) 
 	frames = []
 	count = 0
@@ -100,7 +100,7 @@ def run():
 			if file.endswith('.mp4'):
 				path = os.path.join(root,file)
 				arglist_validation.append((path, 256, BoolWrapper(), Face()))
-
+	
 	for args in arglist_validation:
 		frames_to_write = read_frames(*args)
 		write_frames(frames_to_write,False)
