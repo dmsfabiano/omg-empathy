@@ -211,9 +211,9 @@ def read_raw_images_by_story(data_directory='C:/Users/Diego Fabiano/Research/Dat
             
             for k in range(0,len(subject_container[subject][story])):
                 if subjectActorBoth >= 1:
-                    actor_images[subject][story].append(cv2.resize(cv2.imread(actor_container[subject][story][k][0], 0), (128,128)))
+                    actor_images[subject][story].append(cv2.imread(actor_container[subject][story][k][0]))
                 if (subjectActorBoth == 0 or subjectActorBoth == 2):    
-                    sbj_images[subject][story].append(cv2.resize(cv2.imread(subject_container[subject][story][k][0], 0), (128,128)))
+                    sbj_images[subject][story].append(cv2.imread(subject_container[subject][story][k][0]))
                         
     if subjectActorBoth == 2:
         return np.asarray(sbj_images), np.asarray(actor_images), np.asarray(y_container)

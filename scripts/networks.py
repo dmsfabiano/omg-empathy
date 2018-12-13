@@ -1,5 +1,5 @@
-from keras.models import Sequential
-from keras.layers import Reshape, Dense, Dropout, Conv2D, MaxPooling2D, Flatten, BatchNormalization, ConvLSTM2D, MaxPooling3D, Input, Conv3D
+from keras.models import Sequential, Model
+from keras.layers import Reshape, Dense, Dropout, Conv2D, MaxPooling2D, Flatten, BatchNormalization, ConvLSTM2D, MaxPooling3D, Input, Conv3D, concatenate
 import operator
 from keras.optimizers import RMSprop, adam,adamax, Nadam, SGD
 from keras import backend as K
@@ -121,119 +121,99 @@ def getOptimizer(name,rate):
     else:
         return RMSprop(lr=rate)
 
-def createCrossChannel(batch_size, initial_filter_value_x, initial_filter_value_y, out_neurons, time):
+def finalNetwork(batch_size, initial_filter_value, time):
 
 	# INITIAL FACE CHANNEL
 
-	input_x = Input(shape=(batch_size,time,128,128))
-	x = Conv3D(filters=initial_filter_value, kernel_size=3, activation='relu')(input_x)
-	x = BatchNormalization()(x)
-
-	x = Conv3D(filters=initial_filter_value, kernel_size=3, activation='relu')(x)
+	input_x = Input(shape=(time,256,256,3))
+	x = Conv3D(filters=initial_filter_value, kernel_size=3, padding='same', activation='relu')(input_x)
 	x = BatchNormalization()(x)
 
 	x = MaxPooling3D(pool_size=(2,2,2))(x)
 	x = Dropout(0.2)(x)
 
-	x = Conv3D(filters=initial_filter_value, kernel_size=3, activation='relu')(x)
+	x = Conv3D(filters=initial_filter_value, kernel_size=3, padding='same', activation='relu')(x)
 	x = BatchNormalization()(x)
 
-	x = Conv3D(filters=initial_filter_value, kernel_size=3, activation='relu')(x)
-	x = BatchNormalization()(x)
-
-	x = MaxPooling3D(pool_size=(2,2,2))(x)
+	x = MaxPooling3D(pool_size=(4,4,4))(x)
 	x = Dropout(0.2)(x)
 
-	initial_filter_value *= 2
-
-	x = Conv3D(filters=initial_filter_value, kernel_size=3, activation='relu')(x)
-	x = BatchNormalization()(x)
-
-	x = Conv3D(filters=initial_filter_value, kernel_size=3, activation='relu')(x)
-	x = BatchNormalization()(x)
-	
-	x = Conv3D(filters=initial_filter_value, kernel_size=3, activation='relu')(x)
-	x = BatchNormalization()(x)
-
-	x = MaxPooling3D(pool_size=(2,2,2))(x)
-	x = Dropout(0.2)(x)
-
-    	x = Conv3D(filters=initial_filter_value, kernel_size=3, activation='relu')(x)
+	x = Conv3D(filters=initial_filter_value*2, kernel_size=3, padding='same', activation='relu')(x)
 	x = BatchNormalization()(x)
 
 	# END INITIAL FACE CHANNEL
 
 	# INITIAL AUDIO CHANNEL
 
-	input_y = Input(shape=(batch_size,26,26))
-	y = Conv1D(filters=initial_filter_value_y, kernel_size=3, activation='relu')(input_y)
-	y = MaxPooling1D(pool_size=2)
+	input_y = Input(shape=(256,256,3))
+	y = Conv2D(filters=initial_filter_value, kernel_size=3, padding='same', activation='relu')(input_y)
 	
 	# END INITIAL AUDIO CHANNEL
 
 	# CREATE CHANNEL FOR IMAGE
 
-	cross_channel_x = x
-
-	Flatten()(cross_channel_x)
-	Dense(out_neurons)(cross_channel_x)
+#	cross_channel_x = Flatten()(x)
+#	cross_channel_x = Dense((25*256*256*8)//128)(cross_channel_x)
 	
-
 	# END CHANNEL
 
 	# CREATE CHANNEL FOR AUDIO
 
-	cross_channel_y = y
-
-	Flatten()(cross_channel_y)
-	Dense(out_neurons)(cross_channel_y)
+#	cross_channel_y = Flatten()(y)
+#	cross_channel_y = Dense((25*256*256*8)//128)(cross_channel_y)
 
 	# END CHANNEL FOR AUDIO
 
 	#CHANNEL MERGE
 
-	merged_channel = keras.layers.concatenate([cross_channel_x, cross_channel_y], axis=-1)
-        merged_channel = Reshape((2,10,10), input_shape=(2,100))(merged_channel)
-        merged_channel = Conv3D(filters=8, kernel_size=3, padding='same')(merged_channel)
+#	merged_channel = concatenate([cross_channel_x, cross_channel_y])
+#	merged_channel = Reshape((2,25,2048,2), input_shape=(1,204800))(merged_channel)
+#	merged_channel = Conv3D(filters=8, kernel_size=5, padding='same')(merged_channel)
+
+#	merge_input_x = Flatten()(merged_channel)
+#	merge_input_x = Dense(2048)(merge_input_x)
+#	merged_channel_output_x = Reshape((1,16,16,8), input_shape=(1,2048))(merge_input_x)
+#	merge_input_x = None
+	
+#	merge_input_y = Flatten()(merged_channel)
+#	merge_input_y = Dense(256*256*3)(merge_input_y)
+#	merged_channel_output_y = Reshape((256,256,3), input_shape=(1,256*256*3))(merge_input_y)
+#	merge_input_y = None
+#	merged_channel = None
 
 	# END CHANNEL MERGE
 
 	# START END OF VISUAL
 
-	x = Conv3D(filters=initial_filter_value, kernel_size=3, activation='relu')(x)
-	x = BatchNormalization()(x)
-	
-	x = Conv3D(filters=initial_filter_value, kernel_size=3, activation='relu')(x)
-	x = BatchNormalization()(x)
-
-	x = MaxPooling3D(pool_size=(2,2,2))(x)
-	x = Dropout(0.2)(x)
+#	x = concatenate([x, merged_channel_output_x])
+#	merged_channel_output_x = None
 
 	x = Flatten()(x)
-	x = Dense(out_neurons, activation='relu')(x)
-	x = Dropout(0.5)(x)
-	x = Dense(out_neurons, activation='relu')(x)
-	x = Dropout(0.5)(x)
+	x = Dense(100, activation='relu')(x)
+#	x = Dropout(0.5)(x)
+	#x = Dense(150, activation='relu')(x)
+	#x = Dropout(0.5)(x)
 	
 	visual_channel = Dense(time, activation='linear')(x)
-	
 	# FINISH VISUAL
 
 	# START END OF AUDIO
 
-	y = Conv1D(filters=initial_filter_value_y*2, kernel_size=3, activation='relu')(y)
-	y = MaxPooling1D(pool_size=2)
-	
-	y = Conv1D(filters=initial_filter_value_y, kernel_size=3, activation='relu')(y)
-	y = MaxPooling1D(pool_size=2)
+#	y = concatenate([y, merged_channel_output_y])
+#	merged_channel_output_y = None
 
+	y = Conv2D(filters=initial_filter_value*2, kernel_size=3, padding='same', activation='relu')(y)
+	
 	y = Flatten()(y)
-	y = Dense(out_neurons, activation='relu')(y)
-	y = Dropout(0.5)(y)
+	y = Dense(100, activation='relu')(y)
+#	y = Dropout(0.5)(y)
 	
 	audio_channel = Dense(time, activation='linear')(y)
-	
+
 	# FINISH AUDIO
+	model = Model(inputs=[input_x,input_y], outputs=[visual_channel,audio_channel])
+	model.summary()
+	return multi_gpu_model(model)
 
 
 def CreateLSTMConv2DRegressor(shape, output_neurons, learning_rate, optimizer, kernel, initial_dimension, decreasing, return_sequence = True):
@@ -318,8 +298,8 @@ def CreateConv2DRegressor(shape, output_neurons,learning_rate, optimizer,kernel,
     model.add(Dropout(0.5))
     model.add(Dense(1,activation='linear'))
     
-    model = multi_gpu_model(model,gpus=8)
-    modea.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = 'mse', metrics =  ['mse','accuracy',ccc,'mae'])
+    model = multi_gpu_model(model)
+    model.compile(optimizer = getOptimizer(optimizer,learning_rate), loss = 'mse', metrics =  ['mse','accuracy',ccc,'mae'])
     
     return model
 
